@@ -192,13 +192,13 @@ describe("sound levels", () => {
       voices: Infinity,
     });
     await sound.unlock();
-    expect(gains.map((node) => node.gain.value)).toEqual([0.22, 0, 0]);
+    expect(gains.map((node) => node.gain.value)).toEqual([0.6, 0, 0]);
     sound.configure({
       ...DEFAULT_SETTINGS,
       music: 0.5,
       effects: 0.5,
       voices: 0.5,
     });
-    expect(gains.map((node) => node.gain.value)).toEqual([0.11, 0.175, 0.1]);
+    expect(gains.map((node) => node.gain.value)).toEqual([0.3, 0.175, 0.1]);
   });
 });

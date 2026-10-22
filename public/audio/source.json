@@ -1,0 +1,85 @@
+{
+  "title": "Fuse Funk",
+  "provider": "ElevenLabs",
+  "createdLocalDate": "2026-10-23",
+  "flowId": "BLVzV0qXZz40GOe6ANPW",
+  "flowUrl": "https://elevenlabs.io/app/flows/BLVzV0qXZz40GOe6ANPW",
+  "assets": [
+    {
+      "file": "music/fuse-funk.mp3",
+      "generationId": "032TkIkNFwIx30rckKsQ",
+      "model": "eleven_music_v2",
+      "sourceDurationSeconds": 64,
+      "prompt": "Original instrumental soundtrack for INKBLAST, a colorful comic-book two-player bomb arena brawler. Title: Fuse Funk. A tight 136 BPM arcade electro-funk breakbeat, mischievous syncopated rubbery synth bass, crunchy punchy dry drums, bright short 16-bit chip arpeggios, playful brass-like synth stabs, very catchy compact four-note hook with call-and-response variations. Cool, energetic, cheeky, competitive and propulsive, family friendly. Modern polished stereo game mix with warm bass, controlled treble and space in the mids for explosion and pickup effects. Full groove from the first beat; maintain a steady groove and consistent energy throughout. Instrumental only, no voices, no lyrics, no crowd, no sound effects, no long intro, no dramatic breakdowns, no fadeout. Repeating eight-bar phrases and a final turnaround that flows back into the opening downbeat for looping gameplay.",
+      "parameters": {
+        "duration_seconds": 64,
+        "lyrics_type": "instrumental",
+        "instrumental": true
+      },
+      "processing": {
+        "loopCrossfadeMs": 160,
+        "outputDurationSeconds": 63.84,
+        "loudnessTargetLUFS": -16,
+        "truePeakTargetDb": -2,
+        "bitrateKbps": 160
+      }
+    },
+    {
+      "file": "effects/explode.mp3",
+      "generationId": "F8kj7Dq3b3UgTT46EMc0",
+      "model": "eleven_text_to_sound_v2",
+      "sourceDurationSeconds": 0.6,
+      "prompt": "Single compact comic arcade bomb explosion one-shot for a colorful game. Immediate punchy low thump, crunchy short papery crack, little fizzy debris tail. Satisfying cartoon WHUMP, weighty but playful, tightly controlled bass. Instant attack at start, decays fully within half a second. Dry isolated clean studio game asset, no music, no voice, no ambience, no multiple explosions.",
+      "parameters": {
+        "duration_seconds": 0.6,
+        "prompt_influence": 0.65,
+        "loop": false
+      },
+      "processing": {
+        "trimLeadingSilenceDb": -45,
+        "tailFadeMs": 40,
+        "loudnessTargetLUFS": -14,
+        "truePeakTargetDb": -2,
+        "bitrateKbps": 128
+      }
+    },
+    {
+      "file": "effects/pickup.mp3",
+      "generationId": "OYCo4dNJ2OZO3zvs5ByG",
+      "model": "eleven_text_to_sound_v2",
+      "sourceDurationSeconds": 0.48,
+      "prompt": "One short cheerful arcade power-up pickup sound. Instant bright round plink followed by a quick rising three-note electronic sparkle arpeggio. Bouncy polished retro-futuristic game UI, soft rounded treble, rewarding and playful. Clean dry isolated one-shot, complete decay in half a second, no voice, no music bed, no ambience.",
+      "parameters": {
+        "duration_seconds": 0.5,
+        "prompt_influence": 0.7,
+        "loop": false
+      },
+      "processing": {
+        "trimLeadingSilenceDb": -45,
+        "tailFadeMs": 40,
+        "loudnessTargetLUFS": -14,
+        "truePeakTargetDb": -2,
+        "bitrateKbps": 128
+      }
+    },
+    {
+      "file": "effects/result.mp3",
+      "generationId": "0c3NDLiPaBzlERYM5Tif",
+      "model": "eleven_text_to_sound_v2",
+      "sourceDurationSeconds": 1.76,
+      "prompt": "One short triumphant round victory stinger for a colorful comic arcade arena game: punchy syncopated electronic brass stabs playing a rising four-note fanfare, bouncy chip sparkle and a tight final drum hit. Cheeky heroic joy, polished and warm. Starts immediately, ends cleanly within 1.8 seconds. Isolated game one-shot, no speech, no crowd, no background ambience, no long reverb.",
+      "parameters": {
+        "duration_seconds": 1.8,
+        "prompt_influence": 0.65,
+        "loop": false
+      },
+      "processing": {
+        "trimLeadingSilenceDb": -45,
+        "tailFadeMs": 40,
+        "loudnessTargetLUFS": -14,
+        "truePeakTargetDb": -2,
+        "bitrateKbps": 128
+      }
+    }
+  ]
+}

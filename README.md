@@ -1,6 +1,6 @@
 # Inkblast
 
-A comic arena game for exactly two rivals: one human versus a computer, or two local humans. Eleven themed arenas, twelve new duel maps, practice, Arcade Tour and a local map workshop run entirely in the browser. All artwork and synthesized audio are original to this project.
+A comic arena game for exactly two rivals: one human versus a computer, or two local humans. Eleven themed arenas, twelve new duel maps, practice, Arcade Tour and a local map workshop run entirely in the browser. All artwork and audio are original to this project, including an ElevenLabs-generated instrumental battle track and arcade effects bundled locally.
 
 [Play Inkblast](https://orgoldfus.github.io/inkblast/) · [Acceptance record and remaining release gates](docs/qa/acceptance.md)
 

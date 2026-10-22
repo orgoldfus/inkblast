@@ -92,7 +92,7 @@ app.innerHTML = `
   <dialog id="result-dialog" class="panel-dialog result-dialog"><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div id="winner-mark" class="winner-mark">1</div><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-score"><span id="result-p1">0</span><small>—</small><span id="result-p2">0</span></div><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-setup">CHANGE THE SETUP</button><button id="result-home" class="text-button">Main menu</button></dialog>
   <dialog id="help-dialog" class="panel-dialog"><div class="dialog-heading"><div><p class="eyebrow">A SHORT COURSE IN CHAOS</p><h2>THE FIELD GUIDE.</h2></div><button data-close class="close-button" aria-label="Close guide">×</button></div><div class="guide-steps"><article><b>01</b><h3>MAKE AN EXIT.</h3><p>Bombs explode in a cross. Solid blocks stop fire; orange bricks break. Turn a corner before your fuse runs out.</p></article><article><b>02</b><h3>TAKE A CHANCE.</h3><p>Broken bricks reveal pickups. Mystery pickups are on by default: one icon, 75% helpful, 25% trouble. Watch your player’s strip for the reveal and a 7-second penalty countdown. Switch them off in match setup for visible items.</p></article><article><b>03</b><h3>THINK ONE BOMB AHEAD.</h3><p>Fire lights other bombs instantly. Trap a rival with a chain reaction—but leave yourself a way out.</p></article></div><div class="item-guide">
   ${itemGuideMarkup()}</div><p class="field-note">Action priority depends on your loadout. Keep an eye on the inventory strip below your player. Hazards and closing walls vary with your setup.</p><button id="guide-practice" class="primary">TRY PRACTICE ↗</button></dialog>
-  <dialog id="about-dialog" class="panel-dialog"><div class="dialog-heading"><h2>THE SMALL PRINT.</h2><button data-close class="close-button" aria-label="Close about">×</button></div><p>Inkblast is an original, device-local browser interpretation of classic bomb duels. All artwork and synthesized sound are created for this game.</p><p>Two participants, eleven scenery themes, curated duel layouts, and a local map workshop. Arcade Tour is an Inkblast mode.</p><p>Original-game fidelity is still under verification. Fixed 60 Hz timing, some item interactions, environmental placement, scoring details, and imported scheme behavior may differ from the 1997 game. This build does not claim exact emulation.</p><p>No account, network matches, trackers, or application server. Settings and maps stay in this browser; export maps from the workshop to keep a copy.</p><p id="local-record"></p><div class="dialog-footer"><button id="export-backup">EXPORT DEVICE BACKUP</button><button id="restore-backup">RESTORE BACKUP</button><input id="backup-file" type="file" accept=".json,application/json" hidden></div></dialog>
+  <dialog id="about-dialog" class="panel-dialog"><div class="dialog-heading"><h2>THE SMALL PRINT.</h2><button data-close class="close-button" aria-label="Close about">×</button></div><p>Inkblast is an original, device-local browser interpretation of classic bomb duels. All artwork and audio are created for this game, including original music and arcade effects generated with ElevenLabs.</p><p>Two participants, eleven scenery themes, curated duel layouts, and a local map workshop. Arcade Tour is an Inkblast mode.</p><p>Original-game fidelity is still under verification. Fixed 60 Hz timing, some item interactions, environmental placement, scoring details, and imported scheme behavior may differ from the 1997 game. This build does not claim exact emulation.</p><p>No account, network matches, trackers, or application server. Settings and maps stay in this browser; export maps from the workshop to keep a copy.</p><p id="local-record"></p><div class="dialog-footer"><button id="export-backup">EXPORT DEVICE BACKUP</button><button id="restore-backup">RESTORE BACKUP</button><input id="backup-file" type="file" accept=".json,application/json" hidden></div></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 `;
 
@@ -278,7 +278,7 @@ function startRound(): void {
   sound.configure(
     muted ? { ...settings, music: 0, effects: 0, voices: 0 } : settings,
   );
-  sound.start(state.theme.music);
+  sound.start(state.theme.music, state.hurry);
   document.body.classList.add("in-battle");
   el("pause-button").focus();
 }
@@ -360,7 +360,7 @@ function resume(): void {
   controls.enabled = true;
   accumulator = 0;
   void sound.unlock();
-  sound.start(state.theme.music);
+  sound.start(state.theme.music, state.hurry);
   el("pause-button").focus();
 }
 function finishRound(): void {
