@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: MatchSettings = {
   scoring: "wins",
   roundSeconds: 180,
   enclosureDepth: 4,
+  mysteryPickups: true,
   randomStarts: false,
   winnerBonus: true,
   destroyDiseases: true,

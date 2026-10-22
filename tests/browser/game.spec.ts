@@ -388,3 +388,70 @@ test("narrow touch layout keeps the arena visible and offers touch controls in p
   await expect(page.locator("#pause-dialog")).not.toBeVisible();
   await context.close();
 });
+
+test("mystery pickups default on, persist opt-out, and can be re-enabled", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.locator("#custom-button").click();
+  const mystery = page.getByRole("checkbox", {
+    name: "Mystery pickups",
+    exact: true,
+  });
+  await expect(mystery).toBeChecked();
+  await mystery.uncheck();
+  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.reload();
+  await page.locator("#custom-button").click();
+  await expect(mystery).not.toBeChecked();
+  await mystery.check();
+  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.reload();
+  await page.locator("#custom-button").click();
+  await expect(mystery).toBeChecked();
+});
+
+test("pickup reveals and penalty countdowns stay readable and freeze while paused", async ({
+  page,
+}, testInfo) => {
+  await ready(page);
+  await page.locator("#practice-button").click();
+  await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
+  await page.locator("#practice-item").selectOption("skate");
+  await page.locator("#practice-give").click();
+  await expect(page.locator("#p1-pickup")).toHaveText("SPEED UP!");
+  await page.locator("#practice-item").selectOption("mystery");
+  for (let attempt = 0; attempt < 60; attempt++) {
+    await page.locator("#practice-give").click();
+    if (await page.locator("#p1-effects").textContent()) break;
+  }
+  const countdown = page.locator("#p1-effects");
+  await expect(countdown).toHaveText(
+    /(SLOW MOTION|LEAKING BOMBS|WEAK FLAMES|REVERSED CONTROLS) · [67]s/,
+  );
+  await expect(page.locator("#p1-pickup")).toHaveClass(/harmful/);
+  await page.screenshot({
+    path: testInfo.outputPath("mystery-desktop.png"),
+    fullPage: true,
+  });
+  await page.keyboard.press("Escape");
+  const frozen = await countdown.textContent();
+  await page.waitForTimeout(1100);
+  await expect(countdown).toHaveText(frozen!);
+  await page.locator("#resume-button").click();
+  await expect(countdown).toHaveText("", { timeout: 9000 });
+  await expect(page.locator("#p1-pickup")).toHaveText("");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#practice-item").selectOption("disease");
+  await page.locator("#practice-give").click();
+  await expect(page.locator("#p1-pickup")).not.toHaveText("");
+  await page.screenshot({
+    path: testInfo.outputPath("mystery-mobile.png"),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+});

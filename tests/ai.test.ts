@@ -132,17 +132,21 @@ describe("observable tactical bot", () => {
     "pursues a visible opponent across an open arena on %s",
     (difficulty) => {
       const state = arena();
-      for (let tick = 0; tick < 360; tick++)
+      let closestDistance = Infinity;
+      for (let tick = 0; tick < 360; tick++) {
         stepGame(state, [
           botInput(state, 0, difficulty),
           { direction: null, bomb: false, action: false },
         ]);
-      const player = state.players[0],
-        enemy = state.players[1];
-      expect(
-        Math.abs(cellOf(player.x) - cellOf(enemy.x)) +
-          Math.abs(cellOf(player.y) - cellOf(enemy.y)),
-      ).toBeLessThan(6);
+        const [player, enemy] = state.players;
+        closestDistance = Math.min(
+          closestDistance,
+          Math.abs(cellOf(player.x) - cellOf(enemy.x)) +
+            Math.abs(cellOf(player.y) - cellOf(enemy.y)),
+        );
+      }
+      // After reaching the opponent, the bot can retreat from its own bomb.
+      expect(closestDistance).toBeLessThan(6);
     },
   );
 

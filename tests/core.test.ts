@@ -73,11 +73,11 @@ describe("deterministic battle simulation", () => {
     );
   });
 
-  it("keeps movement inside walls and assists a slightly off-center turn", () => {
+  it("keeps movement centered at walls and realigns an off-center start", () => {
     const state = arena(),
       player = state.players[0];
     advance(state, 60, { direction: "left", bomb: false, action: false });
-    expect(player.x).toBeGreaterThanOrEqual(UNIT - 220);
+    expect(player.x).toBe(UNIT);
     player.x = 3 * UNIT;
     player.y = UNIT + 200;
     state.cells[cellIndex(3, 2)] = "wall";

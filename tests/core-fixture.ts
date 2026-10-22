@@ -49,7 +49,12 @@ export function createTestGame(pillars = false): GameState {
     startingItems: {},
     itemPool: [],
   };
-  const state = createGame(scheme, TEST_THEME, DEFAULT_SETTINGS, 123);
+  const state = createGame(
+    scheme,
+    TEST_THEME,
+    { ...DEFAULT_SETTINGS, mysteryPickups: false },
+    123,
+  );
   state.phase = "active";
   return state;
 }

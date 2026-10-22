@@ -1547,3 +1547,27 @@ input[type="range"] {
 .workshop .status {
   margin: 16px 0;
 }
+
+.mystery-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-weight: 700;
+}
+.player-score .pickup-notice {
+  display: block;
+  min-height: 1.3em;
+  margin-top: 6px;
+  color: #f9d86c;
+  font: 800 clamp(13px, 1.3vw, 19px) / 1.2 var(--display);
+  overflow-wrap: anywhere;
+}
+.player-score .pickup-notice.harmful,
+.player-score div:nth-child(2) > .effect-countdown {
+  color: #ffc282;
+}
+.player-score div:nth-child(2) > .effect-countdown {
+  font-size: clamp(10px, 0.85vw, 12px);
+  font-weight: 700;
+}

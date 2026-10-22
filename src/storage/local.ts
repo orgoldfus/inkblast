@@ -41,6 +41,7 @@ export function normalizeSettings(value: unknown): MatchSettings {
     if (typeof input[key] === "string" && /^[\w-]{1,80}$/.test(input[key]))
       settings[key] = input[key];
   for (const key of [
+    "mysteryPickups",
     "randomStarts",
     "winnerBonus",
     "destroyDiseases",

@@ -1,6 +1,11 @@
 import "./style.css";
 import { ArenaRenderer } from "./render/arena";
-import { applyItem, createGame, stepGame } from "./core/simulation";
+import {
+  applyItem,
+  applyMysteryItem,
+  createGame,
+  stepGame,
+} from "./core/simulation";
 import { botInput } from "./ai/bot";
 import {
   awardWinnerBonus,
@@ -9,6 +14,7 @@ import {
 } from "./rules/bonus";
 import { exportBackup, importBackup } from "./storage/backup";
 import { loadTour, saveTour } from "./storage/tour";
+import { pickupFeedback } from "./rules/pickups";
 import { DEFAULT_SETTINGS } from "./rules/settings";
 import { THEMES, SCHEMES } from "./content/catalog";
 import { Controls, keyLabel, type InputAssignment } from "./input/controls";
@@ -49,7 +55,7 @@ app.innerHTML = `
       <div class="preview-panel"><div class="panel-label"><span id="preview-theme">THE ORIGINAL INKBLAST ARENA</span><span>15 × 11 / TWO PLAYERS</span></div><div id="arena-host" aria-label="Inkblast game arena"></div><div class="preview-caption"><span class="caption-tag">A LITTLE CHAOS GOES A LONG WAY.</span><span class="caption-note">No downloads. No accounts. Just one more round.</span></div></div>
       <nav class="mode-links" aria-label="More ways to play"><button id="tour-button"><span class="mode-index">01 / THE ROAD TRIP</span><strong>ARCADE TOUR <span>↗</span></strong><small>Five arenas. One champion.</small></button><button id="workshop-button"><span class="mode-index">02 / MAKE SOME TROUBLE</span><strong>MAP WORKSHOP <span>↗</span></strong><small>Your blocks. Your rules.</small></button><button id="help-button"><span class="mode-index">03 / KNOW YOUR TOOLS</span><strong>FIELD GUIDE <span>↗</span></strong><small>Bombs, boots & bad ideas.</small></button></nav>
     </section>
-    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip"><div class="player-score red"><span class="portrait">1</span><div><strong>PLAYER ONE</strong><span id="p1-items">1 BOMB · 2 FLAME</span></div><div id="p1-score" class="score-dots"></div></div><div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div><div class="player-score blue"><span class="portrait">2</span><div><strong id="p2-name">THE COMPUTER</strong><span id="p2-items">1 BOMB · 2 FLAME</span></div><div id="p2-score" class="score-dots"></div></div></div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="dpad"><button data-control="up" aria-label="Move up">↑</button><button data-control="left" aria-label="Move left">←</button><button data-control="down" aria-label="Move down">↓</button><button data-control="right" aria-label="Move right">→</button></div><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
+    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip"><div class="player-score red"><span class="portrait">1</span><div><strong>PLAYER ONE</strong><span id="p1-items">1 BOMB · 2 FLAME</span><output id="p1-pickup" class="pickup-notice" aria-label="Player 1 pickup" aria-live="polite"></output><span id="p1-effects" class="effect-countdown"></span></div><div id="p1-score" class="score-dots"></div></div><div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div><div class="player-score blue"><span class="portrait">2</span><div><strong id="p2-name">THE COMPUTER</strong><span id="p2-items">1 BOMB · 2 FLAME</span><output id="p2-pickup" class="pickup-notice" aria-label="Player 2 pickup" aria-live="polite"></output><span id="p2-effects" class="effect-countdown"></span></div><div id="p2-score" class="score-dots"></div></div></div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="dpad"><button data-control="up" aria-label="Move up">↑</button><button data-control="left" aria-label="Move left">←</button><button data-control="down" aria-label="Move down">↓</button><button data-control="right" aria-label="Move right">→</button></div><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
     <section id="workshop" hidden></section>
   </main>
   <footer id="home-footer"><span>CRAFTED FOR GOOD OLD-FASHIONED RIVALRY.</span><span>Everything stays on this device. <button id="about-button" class="text-button">About this edition</button></span></footer>
@@ -60,18 +66,18 @@ app.innerHTML = `
     <label>First to<select name="targetScore"><option value="1">1 point · quick duel</option><option value="3">3 points</option><option value="5">5 points</option><option value="7">7 points</option><option value="10">10 points</option></select></label>
     <label>Round clock<select name="roundSeconds"><option value="60">1 minute</option><option value="90">1½ minutes</option><option value="120">2 minutes</option><option value="150">2½ minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="0">Unlimited</option></select></label>
     <label>Controllers<select id="input-assignment"><option value="keyboard">Shared keyboard</option><option value="mixed">Keyboard + gamepad</option><option value="gamepads">Two gamepads</option></select></label><div class="controller-check" id="controller-status">Keyboard ready.</div>
-  </div><p id="theme-description" class="field-note"></p>
+  </div><label class="check mystery-option"><input type="checkbox" name="mysteryPickups" aria-describedby="mystery-description">Mystery pickups</label><p id="mystery-description" class="field-note">Every pickup looks the same: 75% helpful, 25% trouble. Bad effects last 7 seconds, one at a time. Turn off to reveal each item before collecting.</p><p id="theme-description" class="field-note"></p>
   <details><summary>Advanced battle rules</summary><div class="settings-grid">
     <label>Score by<select name="scoring"><option value="wins">Round wins</option><option value="kills">Opponent eliminations</option></select></label>
     <label>Closing walls<select name="enclosureDepth"><option value="0">Off</option><option value="1">One ring</option><option value="2">Two rings</option><option value="3">Three rings</option><option value="4">Four rings</option><option value="5">To the center</option></select></label>
     <label>Conveyor speed<select name="conveyorSpeed"><option value="0.5">Slow</option><option value="1">Normal</option><option value="2">Fast</option></select></label>
     <label class="check"><input type="checkbox" name="randomStarts">Swap starting corners</label><label class="check"><input type="checkbox" name="winnerBonus">Winner roulette bonus</label><label class="check"><input type="checkbox" name="destroyDiseases">Flames destroy disease pickups</label><label class="check"><input type="checkbox" name="stompBombs">Landing bombs detonate on contact</label><label class="check"><input type="checkbox" name="wally">Wally throwing loadout</label>
-  </div><p class="field-note">Starting items and pickup selection are editable in Map Workshop. Browser rule choices are detailed in About this edition.</p></details>
+  </div><p class="field-note">Starting items and pickup selection are editable in Map Workshop. Mystery mode uses the map’s helpful items and its own penalty mix; all mystery pickups burn in flames. Browser rule choices are detailed in About this edition.</p></details>
   <details><summary>Sound, motion & keyboard</summary><div class="settings-grid"><label>Music<input name="music" type="range" min="0" max="1" step="0.01"></label><label>Sound effects<input name="effects" type="range" min="0" max="1" step="0.01"></label><label>Character sounds<input name="voices" type="range" min="0" max="1" step="0.01"></label><label class="check"><input type="checkbox" name="reducedMotion">Reduce motion & particles</label></div><div id="key-bindings"></div><p class="field-note">Select a key, then press its replacement. Gamepad: stick / D-pad to move, A to plant, B for action, Start to pause.</p></details>
   <div class="dialog-footer"><button type="button" data-close>BACK</button><button class="primary" type="submit">START MATCH ↗</button></div><p id="setup-error" role="alert"></p></form></dialog>
   <dialog id="pause-dialog" class="panel-dialog compact"><p class="eyebrow">TAKE A BREATHER</p><h2>FUSE ON HOLD.</h2><p id="pause-reason">Your arena will be right here.</p><button id="resume-button" class="primary">BACK TO THE BLAST</button><button id="restart-button">RESTART MATCH</button><button id="export-replay" class="text-button">Save a replay record</button><button id="leave-button" class="text-button">Leave for main menu</button></dialog>
   <dialog id="result-dialog" class="panel-dialog result-dialog"><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div id="winner-mark" class="winner-mark">1</div><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-score"><span id="result-p1">0</span><small>—</small><span id="result-p2">0</span></div><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-setup">CHANGE THE SETUP</button><button id="result-home" class="text-button">Main menu</button></dialog>
-  <dialog id="help-dialog" class="panel-dialog"><div class="dialog-heading"><div><p class="eyebrow">A SHORT COURSE IN CHAOS</p><h2>THE FIELD GUIDE.</h2></div><button data-close class="close-button" aria-label="Close guide">×</button></div><div class="guide-steps"><article><b>01</b><h3>MAKE AN EXIT.</h3><p>Bombs explode in a cross. Solid blocks stop fire; orange bricks break. Turn a corner before your fuse runs out.</p></article><article><b>02</b><h3>TAKE THE GOOD STUFF.</h3><p>Broken bricks can reveal pickups. More bombs give you options. Bigger flames give everyone fewer places to hide.</p></article><article><b>03</b><h3>THINK ONE BOMB AHEAD.</h3><p>Fire lights other bombs instantly. Trap a rival with a chain reaction—but leave yourself a way out.</p></article></div><div class="item-guide">
+  <dialog id="help-dialog" class="panel-dialog"><div class="dialog-heading"><div><p class="eyebrow">A SHORT COURSE IN CHAOS</p><h2>THE FIELD GUIDE.</h2></div><button data-close class="close-button" aria-label="Close guide">×</button></div><div class="guide-steps"><article><b>01</b><h3>MAKE AN EXIT.</h3><p>Bombs explode in a cross. Solid blocks stop fire; orange bricks break. Turn a corner before your fuse runs out.</p></article><article><b>02</b><h3>TAKE A CHANCE.</h3><p>Broken bricks reveal pickups. Mystery pickups are on by default: one icon, 75% helpful, 25% trouble. Watch your player’s strip for the reveal and a 7-second penalty countdown. Switch them off in match setup for visible items.</p></article><article><b>03</b><h3>THINK ONE BOMB AHEAD.</h3><p>Fire lights other bombs instantly. Trap a rival with a chain reaction—but leave yourself a way out.</p></article></div><div class="item-guide">
   <p><b>+ BOMB</b> Carry one more active bomb.</p><p><b>♨ FLAME / GOLD</b> Longer blast / maximum range.</p><p><b>» SKATE</b> Move faster through corridors.</p><p><b>↗ KICK</b> Walk into a bomb to kick it; Action stops it.</p><p><b>✊ PUNCH</b> Face a bomb and press Action to launch it.</p><p><b>✋ GRAB</b> Action picks up a nearby bomb; Action throws it.</p><p><b>≋ SPOOGE</b> Action lays a line of your available bombs.</p><p><b>⌁ TRIGGER</b> Action detonates a remote bomb.</p><p><b>◒ JELLY</b> Kicked bombs bounce off obstacles.</p><p><b>☠ DISEASE</b> A temporary surprise: reversed controls, speed changes, automatic bombs and more.</p><p><b>? RANDOM</b> A pickup from the map’s eligible pool.</p><p><b>☠☠ SUPER DISEASE</b> Multiple troublemakers at once.</p></div><p class="field-note">Action priority depends on your loadout. Keep an eye on the inventory strip below your player. Hazards and closing walls vary with your setup.</p><button id="guide-practice" class="primary">TRY PRACTICE ↗</button></dialog>
   <dialog id="about-dialog" class="panel-dialog"><div class="dialog-heading"><h2>THE SMALL PRINT.</h2><button data-close class="close-button" aria-label="Close about">×</button></div><p>Inkblast is an original, device-local browser interpretation of classic bomb duels. All artwork and synthesized sound are created for this game.</p><p>Two participants, eleven scenery themes, curated duel layouts, and a local map workshop. Arcade Tour is an Inkblast mode.</p><p>Original-game fidelity is still under verification. Fixed 60 Hz timing, some item interactions, environmental placement, scoring details, and imported scheme behavior may differ from the 1997 game. This build does not claim exact emulation.</p><p>No account, network matches, trackers, or application server. Settings and maps stay in this browser; export maps from the workshop to keep a copy.</p><p id="local-record"></p><div class="dialog-footer"><button id="export-backup">EXPORT DEVICE BACKUP</button><button id="restore-backup">RESTORE BACKUP</button><input id="backup-file" type="file" accept=".json,application/json" hidden></div></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
@@ -424,7 +430,10 @@ function finishRound(): void {
 function updateHud(): void {
   battle.dataset.phase = state.phase;
   const seconds = Math.max(0, Math.ceil(state.remaining / TICK_RATE));
-  const signature = `${seconds}:${state.phase}:${Math.ceil(state.countdown / TICK_RATE)}:${state.players.map((p) => [p.capacity, p.range, p.abilities.join(), p.diseases.map((d) => d.type).join(), p.alive].join(":")).join("/")}`;
+  const feedback = state.players.map((player) =>
+    pickupFeedback(player, state.tick),
+  );
+  const signature = `${JSON.stringify(feedback)}:${seconds}:${state.phase}:${Math.ceil(state.countdown / TICK_RATE)}:${state.players.map((p) => [p.capacity, p.range, p.abilities.join(), p.diseases.map((d) => d.type).join(), p.alive].join(":")).join("/")}`;
   if (signature === previousHud) return;
   previousHud = signature;
   el("round-label").textContent =
@@ -453,16 +462,13 @@ function updateHud(): void {
   announcement.hidden = !announcement.textContent;
   state.players.forEach((player, id) => {
     el(`p${id + 1}-items`).textContent = player.alive
-      ? `${player.capacity} BOMB${player.capacity > 1 ? "S" : ""} · ${player.range} FLAME${player.abilities.length ? " · " + player.abilities.join(" / ").toUpperCase() : ""}${
-          player.diseases.length
-            ? " · " +
-              player.diseases
-                .map((d) => d.type)
-                .join(" / ")
-                .toUpperCase()
-            : ""
-        }`
+      ? `${player.capacity} BOMB${player.capacity > 1 ? "S" : ""} · ${player.range} FLAME${player.abilities.length ? " · " + player.abilities.join(" / ").toUpperCase() : ""}`
       : "OUT — NICE TRY";
+    const notice = el(`p${id + 1}-pickup`);
+    if (notice.textContent !== feedback[id].notice)
+      notice.textContent = feedback[id].notice;
+    notice.classList.toggle("harmful", feedback[id].harmful);
+    el(`p${id + 1}-effects`).textContent = feedback[id].countdown;
   });
 }
 function frame(time: number): void {
@@ -496,6 +502,8 @@ function frame(time: number): void {
           +p2.action,
         ]);
       const updateStart = performance.now();
+      // Catch-up frames still interpolate only the most recent simulation step.
+      renderer.capturePositions(state);
       stepGame(state, [p1, p2]);
       updateTimes.push(performance.now() - updateStart);
       if (updateTimes.length > 1200) updateTimes.shift();
@@ -537,8 +545,21 @@ function syncSetup(): void {
   }
   el<HTMLSelectElement>("input-assignment").value = controls.assignment;
   updateThemeDescription();
+  syncPickupRule();
   renderBindings();
 }
+function syncPickupRule(): void {
+  const mystery = setupForm.elements.namedItem(
+    "mysteryPickups",
+  ) as HTMLInputElement;
+  const destroyDiseases = setupForm.elements.namedItem(
+    "destroyDiseases",
+  ) as HTMLInputElement;
+  destroyDiseases.disabled = mystery.checked;
+}
+(setupForm.elements.namedItem("mysteryPickups") as HTMLInputElement).onchange =
+  syncPickupRule;
+
 function readSetup(): void {
   const data = new FormData(setupForm);
   const next = { ...settings };
@@ -734,11 +755,9 @@ el("resume-tour").onclick = () => {
 };
 el("practice-give").onclick = () => {
   if (mode === "practice") {
-    applyItem(
-      state,
-      state.players[0],
-      el<HTMLSelectElement>("practice-item").value as ItemType,
-    );
+    const item = el<HTMLSelectElement>("practice-item").value;
+    if (item === "mystery") applyMysteryItem(state, state.players[0]);
+    else applyItem(state, state.players[0], item as ItemType);
     previousHud = "";
   }
 };
@@ -749,6 +768,7 @@ el("practice-reset").onclick = () => {
   player.speed = 0;
   player.abilities = [];
   player.diseases = [];
+  delete player.pickupFeedback;
   previousHud = "";
 };
 el("tour-button").onclick = () => {

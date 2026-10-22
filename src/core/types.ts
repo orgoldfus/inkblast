@@ -74,6 +74,7 @@ export interface MatchSettings {
   scoring: "wins" | "kills";
   roundSeconds: number;
   enclosureDepth: number;
+  mysteryPickups: boolean;
   randomStarts: boolean;
   winnerBonus: boolean;
   destroyDiseases: boolean;
@@ -96,6 +97,7 @@ export interface Player {
   speed: number;
   abilities: ItemType[];
   diseases: { type: Disease; until: number }[];
+  pickupFeedback?: { item: ItemType; diseases: Disease[]; until: number };
   carrying: number | null;
   kills: number;
   invulnerableUntil: number;
@@ -152,6 +154,16 @@ export interface Transit {
   targetY: number;
   transferred: boolean;
 }
+export interface PlayerMove {
+  fromX: number;
+  fromY: number;
+  targetX: number;
+  targetY: number;
+  direction: Direction;
+  duration: number;
+  elapsed: number;
+  queuedDirection: Direction | null;
+}
 export interface SimulationRuntime {
   lastBomb: [boolean, boolean];
   lastAction: [boolean, boolean];
@@ -163,6 +175,7 @@ export interface SimulationRuntime {
   closureStep: number;
   perimeterClosed: boolean;
   transits: [Transit | null, Transit | null];
+  moves: [PlayerMove | null, PlayerMove | null];
   directionHistory: [Array<Direction | null>, Array<Direction | null>];
 }
 export interface GameState {

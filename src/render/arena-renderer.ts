@@ -31,7 +31,9 @@ interface PlayerView {
   y: number;
   previousX: number;
   previousY: number;
-  moving: boolean;
+  renderedX: number;
+  renderedY: number;
+  walkDistance: number;
   diedAt: number | null;
   transitStarted: number | null;
   transitX: number;
@@ -258,7 +260,9 @@ export class ArenaRenderer {
         y: player.y,
         previousX: player.x,
         previousY: player.y,
-        moving: false,
+        renderedX: player.x,
+        renderedY: player.y,
+        walkDistance: 0,
         diedAt: null,
         transitStarted: null,
         transitX: player.x,
@@ -284,6 +288,15 @@ export class ArenaRenderer {
         (state.runtime?.regen.some((entry) => entry.index === y * COLS + x) ??
           false))
     );
+  }
+
+  capturePositions(state: GameState): void {
+    for (const player of state.players) {
+      const view = this.players[player.id];
+      if (!view) continue;
+      view.previousX = player.x;
+      view.previousY = player.y;
+    }
   }
 
   render(state: GameState, alpha = 1): void {
@@ -312,7 +325,9 @@ export class ArenaRenderer {
       const index = flameKey(pickup.x, pickup.y);
       const view = this.pickupViews[index];
       if (!view) continue;
-      view.texture = art.pickups.get(pickup.type)!;
+      view.texture = art.pickups.get(
+        state.settings.mysteryPickups ? "random" : pickup.type,
+      )!;
       view.visible = true;
       view.y = (pickup.y + 0.5) * TILE + Math.sin(time * 3 + index) * 1.8;
     }
@@ -402,11 +417,17 @@ export class ArenaRenderer {
         view.transitY = view.y;
       } else if (!transit) view.transitStarted = null;
       if (newTick) {
-        view.previousX = view.x;
-        view.previousY = view.y;
-        view.moving = view.x !== player.x || view.y !== player.y;
         view.x = player.x;
         view.y = player.y;
+      }
+      // Teleports must not sweep the sprite across the intervening tiles.
+      if (
+        Math.abs(player.x - view.previousX) +
+          Math.abs(player.y - view.previousY) >
+        UNIT
+      ) {
+        view.previousX = player.x;
+        view.previousY = player.y;
       }
       let x = view.previousX + (player.x - view.previousX) * alpha;
       let y = view.previousY + (player.y - view.previousY) * alpha;
@@ -430,12 +451,20 @@ export class ArenaRenderer {
       }
       const wx = (x / UNIT + 0.5) * TILE,
         wy = (y / UNIT + 0.5) * TILE;
+      const distance =
+        Math.abs(x - view.renderedX) + Math.abs(y - view.renderedY);
+      const walking =
+        distance > 0 && distance <= UNIT && !transit && player.alive;
+      if (walking)
+        view.walkDistance = (view.walkDistance + distance) % (2 * UNIT);
+      view.renderedX = x;
+      view.renderedY = y;
+      const frames = this.art!.players[player.id][DIRECTIONS[player.direction]];
       const frame =
-        view.moving && !state.settings.reducedMotion
-          ? Math.floor(time * 11) % 4
+        walking && !state.settings.reducedMotion
+          ? Math.floor((view.walkDistance / (2 * UNIT)) * frames.length)
           : 0;
-      view.body.texture =
-        this.art!.players[player.id][DIRECTIONS[player.direction]][frame];
+      view.body.texture = frames[frame];
       view.body.position.set(wx, wy + 10 - jump * 75);
       view.body.zIndex = wy + 12 + jump * 85;
       view.shadow.position.set(wx, wy + 17);

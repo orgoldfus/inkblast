@@ -1,3 +1,4 @@
+import { MYSTERY_RULES } from "../rules/pickups";
 import { RULES } from "../rules/settings";
 import { validateScheme } from "../content/schemes";
 import {
@@ -58,6 +59,7 @@ const newRuntime = (): SimulationRuntime => ({
   closureStep: 0,
   perimeterClosed: false,
   transits: [null, null],
+  moves: [null, null],
   directionHistory: [[], []],
 });
 const runtime = (state: GameState): SimulationRuntime =>
@@ -164,6 +166,7 @@ export function createGame(
     }
   }
   state.events = [];
+  for (const player of state.players) delete player.pickupFeedback;
   state.initialCells = [...state.cells];
   distributeItems(state);
   return state;
@@ -242,12 +245,19 @@ export const movementSpeed = (player: Player): number =>
       ? 155
       : RULES.baseSpeed + player.speed * RULES.speedIncrement;
 
-function inflict(state: GameState, player: Player, type: Disease): void {
+function inflict(
+  state: GameState,
+  player: Player,
+  type: Disease,
+  duration: number = RULES.diseaseDuration,
+): void {
   if (type === "swap") {
     const other = state.players[1 - player.id];
     if (other.alive) {
       [player.x, other.x] = [other.x, player.x];
       [player.y, other.y] = [other.y, player.y];
+      const moves = runtime(state).moves;
+      [moves[player.id], moves[other.id]] = [moves[other.id], moves[player.id]];
       state.events.push({
         type: "warp",
         player: player.id,
@@ -258,9 +268,8 @@ function inflict(state: GameState, player: Player, type: Disease): void {
     return;
   }
   const existing = player.diseases.find((d) => d.type === type);
-  if (existing) existing.until = state.tick + RULES.diseaseDuration;
-  else
-    player.diseases.push({ type, until: state.tick + RULES.diseaseDuration });
+  if (existing) existing.until = state.tick + duration;
+  else player.diseases.push({ type, until: state.tick + duration });
 }
 
 export function applyItem(
@@ -280,6 +289,7 @@ export function applyItem(
       );
     return;
   }
+  const diseases: Disease[] = [];
   if (item === "bomb")
     player.capacity = Math.min(RULES.maxCapacity, player.capacity + 1);
   else if (item === "flame")
@@ -291,7 +301,9 @@ export function applyItem(
     const choices = [...DISEASES];
     for (let count = 0; count < (item === "superDisease" ? 3 : 1); count++) {
       const index = Math.floor(random(state) * choices.length);
-      inflict(state, player, choices.splice(index, 1)[0]);
+      const disease = choices.splice(index, 1)[0];
+      diseases.push(disease);
+      inflict(state, player, disease);
     }
   } else if (ABILITIES.includes(item) && !player.abilities.includes(item)) {
     if (item === "trigger")
@@ -300,6 +312,20 @@ export function applyItem(
       player.abilities = player.abilities.filter((type) => type !== "trigger");
     player.abilities.push(item);
   }
+  recordPickup(state, player, item, diseases);
+}
+
+function recordPickup(
+  state: GameState,
+  player: Player,
+  item: ItemType,
+  diseases: Disease[] = [],
+): void {
+  player.pickupFeedback = {
+    item,
+    diseases,
+    until: state.tick + MYSTERY_RULES.feedbackDuration,
+  };
   state.events.push({
     type: "pickup",
     player: player.id,
@@ -307,6 +333,35 @@ export function applyItem(
     x: cellOf(player.x),
     y: cellOf(player.y),
   });
+}
+
+export function applyMysteryItem(state: GameState, player: Player): void {
+  if (random(state) < MYSTERY_RULES.harmfulChance) {
+    const choices = MYSTERY_RULES.penalties;
+    const disease = choices[Math.floor(random(state) * choices.length)];
+    player.diseases = [];
+    inflict(state, player, disease, MYSTERY_RULES.penaltyDuration);
+    recordPickup(state, player, "disease", [disease]);
+    return;
+  }
+  const helpful = (type: ItemType): boolean =>
+    type !== "random" && type !== "disease" && type !== "superDisease";
+  const useful = (type: ItemType): boolean => {
+    if (type === "bomb") return player.capacity < RULES.maxCapacity;
+    if (type === "flame" || type === "goldflame")
+      return player.range < RULES.maxRange;
+    if (type === "skate") return player.speed < RULES.maxSpeed;
+    return !player.abilities.includes(type);
+  };
+  const pool = state.scheme.itemPool
+    .flatMap((type) =>
+      type === "random" ? (state.scheme.randomPool ?? []) : [type],
+    )
+    .filter(helpful);
+  const eligible = pool.length ? pool : [...MYSTERY_RULES.fallbackItems];
+  const upgrades = eligible.filter(useful);
+  const choices = upgrades.length ? upgrades : eligible;
+  applyItem(state, player, choices[Math.floor(random(state) * choices.length)]);
 }
 
 function fits(state: GameState, player: Player, x: number, y: number): boolean {
@@ -358,32 +413,69 @@ function movePlayer(
   player: Player,
   requested: Direction | null,
 ): void {
-  if (!requested || runtime(state).stunUntil[player.id] > state.tick) return;
-  const direction = hasDisease(player, "reverse")
-    ? opposite(requested)
-    : requested;
-  player.direction = direction;
-  const vector = VECTOR[direction],
-    speed = movementSpeed(player);
-  const horizontal = vector.x !== 0;
-  const perpendicular = horizontal ? player.y : player.x;
-  const center = cellOf(perpendicular) * UNIT;
-  const offset = center - perpendicular;
-  if (Math.abs(offset) <= UNIT / 2 && offset !== 0) {
-    const correction = Math.sign(offset) * Math.min(Math.abs(offset), speed);
-    const nx = player.x + (horizontal ? 0 : correction),
-      ny = player.y + (horizontal ? correction : 0);
-    if (fits(state, player, nx, ny)) {
-      player.x = nx;
-      player.y = ny;
-    }
+  const meta = runtime(state);
+  if (meta.stunUntil[player.id] > state.tick) return;
+  let direction =
+    requested && hasDisease(player, "reverse")
+      ? opposite(requested)
+      : requested;
+  let move = meta.moves[player.id];
+  if (move && player.x === move.targetX && player.y === move.targetY) {
+    direction ??= move.queuedDirection;
+    move = meta.moves[player.id] = null;
   }
-  const nx = player.x + vector.x * speed,
-    ny = player.y + vector.y * speed;
-  if (fits(state, player, nx, ny)) {
-    player.x = nx;
-    player.y = ny;
-  } else kickAhead(state, player, direction);
+  if (!move) {
+    const x = cellOf(player.x),
+      y = cellOf(player.y);
+    const belt =
+      state.theme.hazard === "conveyor" ? hazardDirection(state, x, y) : null;
+    const beltSpeed = belt ? 20 * state.settings.conveyorSpeed : 0;
+    let speed = beltSpeed;
+    if (direction) {
+      speed = movementSpeed(player);
+      if (belt === direction) speed += beltSpeed;
+      else if (belt === opposite(direction))
+        speed = Math.max(1, speed - beltSpeed);
+    }
+    direction ??= belt;
+    if (!direction || speed <= 0) return;
+    player.direction = direction;
+    const vector = VECTOR[direction];
+    const targetX = (x + vector.x) * UNIT;
+    const targetY = (y + vector.y) * UNIT;
+    if (!fits(state, player, targetX, targetY)) {
+      kickAhead(state, player, direction);
+      return;
+    }
+    move = meta.moves[player.id] = {
+      fromX: x * UNIT,
+      fromY: y * UNIT,
+      targetX,
+      targetY,
+      direction,
+      duration: Math.ceil(UNIT / speed),
+      elapsed: 0,
+      queuedDirection: null,
+    };
+    player.x = move.fromX;
+    player.y = move.fromY;
+  } else if (direction) {
+    move.queuedDirection = direction === move.direction ? null : direction;
+  }
+  // A landing bomb or regenerated brick can block a step already in progress.
+  if (!fits(state, player, move.targetX, move.targetY)) {
+    player.x = move.fromX;
+    player.y = move.fromY;
+    meta.moves[player.id] = null;
+    return;
+  }
+  const vector = VECTOR[move.direction];
+  const distance = Math.round(
+    UNIT * Math.min(++move.elapsed / move.duration, 1),
+  );
+  player.direction = move.direction;
+  player.x = move.fromX + vector.x * distance;
+  player.y = move.fromY + vector.y * distance;
 }
 
 export function plantBomb(
@@ -664,7 +756,8 @@ function explodeBombs(state: GameState): void {
         (p) =>
           p.x !== point.x ||
           p.y !== point.y ||
-          (!state.settings.destroyDiseases &&
+          (!state.settings.mysteryPickups &&
+            !state.settings.destroyDiseases &&
             (p.type === "disease" || p.type === "superDisease")),
       );
     }
@@ -735,6 +828,7 @@ function environment(state: GameState): void {
     const transit = meta.transits[player.id];
     if (transit) {
       if (!transit.transferred && state.tick >= transit.transferAt) {
+        meta.moves[player.id] = null;
         player.x = transit.targetX * UNIT;
         player.y = transit.targetY * UNIT;
         transit.transferred = true;
@@ -744,28 +838,12 @@ function environment(state: GameState): void {
     }
     let x = cellOf(player.x),
       y = cellOf(player.y);
-    const direction = hazardDirection(state, x, y);
-    if (direction && state.theme.hazard === "conveyor") {
-      const vector = VECTOR[direction],
-        amount = 20 * Math.max(0, Math.min(3, state.settings.conveyorSpeed));
-      if (
-        fits(
-          state,
-          player,
-          player.x + vector.x * amount,
-          player.y + vector.y * amount,
-        )
-      ) {
-        player.x += vector.x * amount;
-        player.y += vector.y * amount;
-      }
-    }
     const special = hazardCells(state).findIndex((p) => p.x === x && p.y === y);
     if (
       special >= 0 &&
       meta.warpUntil[player.id] <= state.tick &&
-      Math.abs(player.x - x * UNIT) < 250 &&
-      Math.abs(player.y - y * UNIT) < 250
+      player.x === x * UNIT &&
+      player.y === y * UNIT
     ) {
       const points = hazardCells(state);
       if (
@@ -820,10 +898,12 @@ function environment(state: GameState): void {
     const pickup = state.pickups.find((p) => p.x === x && p.y === y);
     if (pickup && !state.flames.some((f) => f.x === x && f.y === y)) {
       state.pickups = state.pickups.filter((p) => p !== pickup);
-      applyItem(state, player, pickup.type);
+      if (state.settings.mysteryPickups) applyMysteryItem(state, player);
+      else applyItem(state, player, pickup.type);
     }
   }
   if (
+    !state.settings.mysteryPickups &&
     state.tick % 60 === 0 &&
     state.players.every((p) => p.alive) &&
     Math.abs(state.players[0].x - state.players[1].x) < 800 &&

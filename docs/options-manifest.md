@@ -35,3 +35,9 @@ The source for the original option inventory is the [pinned game-mode research](
 Persisted settings are sanitized by field and range. Unknown keys, invalid types and unsupported values do not flow into a match. Maps and progress use versioned device storage with session fallback and a downloadable map backup. Imported files never upload to a server.
 
 This manifest inventories known original options and explicit exceptions. It is not a claim that every original conditional interaction, original default, controller behavior or hidden mode has passed parity testing. The [rule ledger](rule-ledger.md) records those limits.
+
+## Mystery pickups (Inkblast option)
+
+Enabled by default, including when loading older settings. Every field pickup uses the same question-mark icon and rolls its result on collection: 75% helpful, 25% harmful. The map still controls drop locations and counts. Helpful results use its helpful item pool (including eligible Random results), avoiding capped upgrades and owned abilities where possible; maps without helpful entries fall back to bombs, flames and skates. Starting inventory, winner bonuses and explicitly selected practice items keep their original behavior.
+
+Mystery penalties are slow movement, leaking bombs, weak flames or reversed controls. Each lasts seven simulation seconds; a new penalty replaces the previous one, and mystery-mode penalties do not spread between players. All mystery pickups burn in flames, so their hidden types cannot be inferred from survival. The computer values all mystery pickups equally. Each player gets a named reveal and a countdown that freezes with the game. Turning the option off restores visible items and the existing disease rules.

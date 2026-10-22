@@ -345,7 +345,8 @@ function chooseGoal(
       (item) => item.x === route.x && item.y === route.y,
     );
     const pickupScore = pickup
-      ? pickup.type === "disease" || pickup.type === "superDisease"
+      ? !state.settings.mysteryPickups &&
+        (pickup.type === "disease" || pickup.type === "superDisease")
         ? -18
         : 18
       : 0;

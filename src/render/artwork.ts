@@ -614,14 +614,16 @@ function makePerimeter(theme: Theme, variant: number): Texture {
   });
 }
 
+const WALK_FRAMES = 8;
+
 function makePlayer(id: number, direction: Direction, frame: number): Texture {
   const color = id ? "#1688f2" : "#f23f35";
   const dark = id ? "#095497" : "#a51f25";
   const light = id ? "#89d6ff" : "#ff9d76";
   return texture(96, 120, (ctx) => {
-    const stride = [0, 5, 0, -5][frame];
+    const stride = Math.sin((frame / WALK_FRAMES) * Math.PI * 2) * 5;
     ctx.save();
-    ctx.translate(0, frame % 2 ? -1.8 : 0);
+    ctx.translate(0, -Math.abs(stride) * 0.36);
     line(ctx, [36, 82, 31 - stride, 101], INK, 11);
     line(ctx, [59, 82, 65 + stride, 101], INK, 11);
     ellipse(ctx, 31 - stride, 103, 8, 5, dark);
@@ -953,7 +955,9 @@ export function createArenaArt(theme: Theme): ArenaArt {
     bricks: Array.from({ length: 3 }, (_, i) => keep(makeBrick(theme, i))),
     players: [0, 1].map((id) =>
       directions.map((direction) =>
-        Array.from({ length: 4 }, (_, i) => keep(makePlayer(id, direction, i))),
+        Array.from({ length: WALK_FRAMES }, (_, i) =>
+          keep(makePlayer(id, direction, i)),
+        ),
       ),
     ),
     bombs: [0, 1, 2].map((kind) =>
