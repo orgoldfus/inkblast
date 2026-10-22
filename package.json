@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "preview": "vite preview --host 127.0.0.1",
+    "render:share": "node scripts/render-share-card.mjs",
     "test:browser": "playwright test",
     "balance": "esbuild scripts/balance-report.ts --bundle --platform=node --format=esm --outfile=artifacts/balance-runner.mjs && node artifacts/balance-runner.mjs",
     "format": "prettier --write src tests scripts *.ts *.json index.html .github/workflows/*.yml"
