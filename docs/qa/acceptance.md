@@ -27,7 +27,7 @@ Automated self-play found and fixed off-center bomb planting that trapped bots w
 
 ## Automated acceptance totals
 
-- 62 unit/scenario tests passed across six files (the full 58-test run plus four added enclosure regressions). This includes 132 theme/layout self-play combinations plus maximum-inventory stress.
+- 62 unit/scenario tests passed across six files, including the successful GitHub release run. This includes 132 theme/layout self-play combinations plus maximum-inventory stress.
 - Seven production Chromium journeys passed in a single run (47.3 seconds before countdown-wait cleanup).
 
 ## Open release gates
@@ -35,6 +35,12 @@ Automated self-play found and fixed off-center bomb planting that trapped bots w
 - Original executable comparison, the audited original two-player scheme catalog, timing conflicts, duds and exact special-item/environment interactions remain unverified or incomplete. See the rule ledger for specific differences.
 - Real Edge/Safari and iOS/Android hardware, physical gamepad behavior, keyboard rollover, end-to-end input latency, integrated-GPU frame-time targets, long-session memory stability and WebGL recovery still need device testing.
 - Firefox 157.0 and WebKit 27.2 desktop-engine smoke passed rendering, quick play, pause/resume, a full local round/rematch and saved-map reload, with no page errors or external requests. See `browser-engines.md`; these results are not equivalent to the physical-device matrix.
-- GitHub Pages is verified only after its workflow succeeds and the live URL completes a real browser round.
+
 
 The game should be described as a playable Inkblast beta while these plan requirements remain open.
+
+## Published release verification
+
+The [public site](https://orgoldfus.github.io/inkblast/) passed a complete Chrome 155 hosted-site playtest after [release workflow 39803728668](https://github.com/orgoldfus/inkblast/actions/runs/39803728668) succeeded for code commit `e276fc3be50d551ede6697144bec00e636bef679`. The checks loaded and refreshed the project URL, started a local duel, planted a bomb, observed the correct 0–1 result, rematched, paused and returned home. No page errors, failed HTTP responses or requests outside the static site origin were recorded. The final gameplay screenshot was visually inspected.
+
+The first CI attempt exposed a test-readiness race: the countdown element could be empty before its first frame. The browser suite now waits for the explicit active-round state. Three repeated two-keyboard scenarios and the full GitHub browser suite passed after the correction.
