@@ -27,7 +27,7 @@ Automated self-play found and fixed off-center bomb planting that trapped bots w
 
 ## Automated acceptance totals
 
-- 58 unit/scenario tests passed across six files. This includes 132 theme/layout self-play combinations plus maximum-inventory stress.
+- 62 unit/scenario tests passed across six files (the full 58-test run plus four added enclosure regressions). This includes 132 theme/layout self-play combinations plus maximum-inventory stress.
 - Seven production Chromium journeys passed in a single run (47.3 seconds before countdown-wait cleanup).
 
 ## Open release gates

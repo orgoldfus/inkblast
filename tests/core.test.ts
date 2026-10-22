@@ -9,6 +9,8 @@ import {
 import { awardWinnerBonus } from "../src/rules/bonus";
 import { DEFAULT_SETTINGS, RULES } from "../src/rules/settings";
 import {
+  COLS,
+  ROWS,
   UNIT,
   EMPTY_INPUT,
   cellIndex,
@@ -551,4 +553,61 @@ describe("deterministic battle simulation", () => {
     advance(state, 240);
     expect(state.cells[cellIndex(3, 3)]).toBe("brick");
   });
+
+  it("leaves no sanctuary on any imported open edge cell", () => {
+    const fixture = arena();
+    const edges = [];
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1)
+          edges.push({ x, y });
+      }
+    }
+    for (const edge of edges) {
+      const state = createGame(
+        {
+          ...fixture.scheme,
+          cells: fixture.cells.map(() => "floor"),
+          spawns: [edge, { x: 7, y: 5 }],
+        },
+        theme,
+        { ...DEFAULT_SETTINGS, enclosureDepth: 5 },
+        42,
+      );
+      state.phase = "active";
+      state.remaining = 1;
+      advance(state, 800);
+      expect(state.phase, `edge ${edge.x},${edge.y}`).toBe("finished");
+      expect(state.players[0].alive).toBe(false);
+      expect(state.winner).toBe(1);
+    }
+  });
+
+  it.each([1, 3, 5])(
+    "respects %i interior enclosure rings after closing an imported perimeter",
+    (depth) => {
+      const fixture = arena();
+      const state = createGame(
+        { ...fixture.scheme, cells: fixture.cells.map(() => "floor") },
+        theme,
+        { ...DEFAULT_SETTINGS, enclosureDepth: depth },
+        42,
+      );
+      state.phase = "active";
+      state.remaining = 1;
+      for (const player of state.players) player.invulnerableUntil = 10000;
+      advance(state, 2200);
+      expect(state.runtime!.perimeterClosed).toBe(true);
+      expect(state.closingDepth).toBe(depth);
+      if (depth < 5) {
+        expect(state.cells[cellIndex(depth + 1, depth + 1)]).toBe("floor");
+      } else {
+        expect(state.cells.every((cell) => cell === "wall")).toBe(true);
+        for (const player of state.players) player.invulnerableUntil = 0;
+        advance(state, RULES.resolution);
+        expect(state.phase).toBe("finished");
+        expect(state.winner).toBeNull();
+      }
+    },
+  );
 });

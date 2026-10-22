@@ -8,11 +8,11 @@ During the first human playtest, the user described movement as responsive and r
 
 ## Current automated coverage
 
-`tests/core.test.ts` has 29 passing scenarios. They cover wall collision/corner assistance; leaving and re-entering bombs; stable chain reactions and brick blockers; late simultaneous deaths; inventory caps/exclusions; trigger bombs and owner death; carrying and expiring carried fuses; full-board punch wrapping; kick/stop/jelly; all disease families and selected precedence/transmission cases; Random eligibility/overrides; warp and trampoline transit; human-only hockey input delay; conveyor/arrow behavior; haunted regeneration; roulette penalties/carryover; imported map and settings validation; perimeter enclosure; and deterministic input replay.
+`tests/core.test.ts` has 33 passing scenarios. They cover wall collision/corner assistance; leaving and re-entering bombs; stable chain reactions and brick blockers; late simultaneous deaths; inventory caps/exclusions; trigger bombs and owner death; carrying and expiring carried fuses; full-board punch wrapping; kick/stop/jelly; all disease families and selected precedence/transmission cases; Random eligibility/overrides; warp and trampoline transit; human-only hockey input delay; conveyor/arrow behavior; haunted regeneration; roulette penalties/carryover; imported map and settings validation; perimeter enclosure; and deterministic input replay.
 
 `tests/ai.test.ts` has nine passing scenarios. They cover chain-aware forecasts, refusing inescapable plants, single-bomb survival at all three difficulties, independence from hidden item placement, capacity-safe demolition, all twelve curated layouts, and rejecting off-center planting. The Classic opening has a specific survival regression. A blanket minimum round duration is deliberately not used: a short round can be a valid opponent trap, as observed in a Throwdown trace where simultaneous opposing bombs sealed the normal bot's escape.
 
-`tests/ai-matrix.test.ts` has two passing sustained scenarios. These are additional to the core and AI tests above: **40 core/AI scenarios in total**. The TypeScript check passes. Run them with:
+`tests/ai-matrix.test.ts` has two passing sustained scenarios. These are additional to the core and AI tests above: **44 core/AI scenarios in total**. The TypeScript check passes. Run them with:
 
 ```sh
 rtk npm test -- tests/core.test.ts tests/ai.test.ts tests/ai-matrix.test.ts
@@ -56,3 +56,7 @@ Two hard planners ran for 1,800 updates with capacity ten, maximum blast range, 
 Measurements use Node.js 24.14.0 / Vitest 5.0.5 on macOS 27.0.1 ARM64. Timing surrounds both bot decisions and `stepGame`; assertions and summary output are outside the measured interval. Other desktop/browser work can contend for this host. CPU p95 was below the plan's 4 ms target in these runs, but the matrix includes an update outlier, and these measurements exclude rendering, audio, controller polling and browser input latency. They do not certify 60 fps or a physical desktop/mobile device support matrix.
 
 The exact original scheme catalog, original timing parity, dud behavior and direct executable comparisons remain unresolved as described in the reference audit. The supplied layouts and hazard coordinates are labeled Inkblast adaptations.
+
+## Borderless enclosure regression
+
+A focused follow-up verifies every one of the 48 outer edge cells on a fully open imported map: a stationary edge player is eliminated and the round reaches a finished result. Separate full-sequence cases verify one, three and five configured interior rings after the imported perimeter closes. Temporary test-only invulnerability allows the five-ring case to inspect the entire closure: all 165 cells become walls, and removing that protection produces a finished draw within the death-resolution window. Authored wall perimeters still start directly at interior ring one. Limited-depth play continues in the remaining narrowed arena; no new timeout policy was introduced. These four added scenarios pass, and the TypeScript check remains clean. The runtime perimeter handling was already present in the initial release; this follow-up strengthens its regression evidence.
