@@ -57,9 +57,11 @@ test("local duel receives a keyboard bomb, pauses, resolves, and rematches", asy
   await page.locator("#resume-button").click();
   await expect(page.locator("#pause-dialog")).not.toBeVisible();
   // Wait for the real countdown before placing a bomb under the stationary player.
-  await expect(page.locator("#battle-announcement")).toBeHidden({
-    timeout: 10_000,
-  });
+  await expect(page.locator("#battle")).toHaveAttribute(
+    "data-phase",
+    "active",
+    { timeout: 10_000 },
+  );
   await page.keyboard.press("Space");
   await expect(page.locator("#result-dialog")).toBeVisible({ timeout: 12_000 });
   await expect(page.locator("#result-p2")).toHaveText("1");
@@ -76,9 +78,11 @@ test("two keyboard players can both plant bombs and produce a drawn round", asyn
   page,
 }) => {
   await startLocal(page);
-  await expect(page.locator("#battle-announcement")).toBeHidden({
-    timeout: 10_000,
-  });
+  await expect(page.locator("#battle")).toHaveAttribute(
+    "data-phase",
+    "active",
+    { timeout: 10_000 },
+  );
   await page.keyboard.press("Space");
   await page.keyboard.press("Enter");
   await expect(page.locator("#result-dialog")).toBeVisible({ timeout: 12_000 });
@@ -117,13 +121,11 @@ test("device backup exports and restores settings and local records", async ({
     tourBest: 2,
     seenThemes: ["classic"],
   };
-  await page
-    .locator("#backup-file")
-    .setInputFiles({
-      name: "restore.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(backup)),
-    });
+  await page.locator("#backup-file").setInputFiles({
+    name: "restore.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
   await expect(page.locator("#toast")).toContainText("Restored settings");
   await page.getByRole("button", { name: "Close about", exact: true }).click();
   await page.locator("#about-button").click();
@@ -173,9 +175,11 @@ test("two mocked gamepads are assigned, deliver a bomb and pause after disconnec
   await expect(page.locator("#pause-dialog")).toBeVisible();
   await expect(page.locator("#pause-reason")).toContainText("disconnected");
   await page.locator("#resume-button").click();
-  await expect(page.locator("#battle-announcement")).toBeHidden({
-    timeout: 10_000,
-  });
+  await expect(page.locator("#battle")).toHaveAttribute(
+    "data-phase",
+    "active",
+    { timeout: 10_000 },
+  );
   await page.evaluate(() => {
     const pads = (
       window as unknown as {
@@ -257,13 +261,11 @@ test("workshop edits tiles, undoes, saves in IndexedDB and imports an inert map 
       name: "<img src=x onerror=alert(1)>",
     },
   };
-  await page
-    .locator("#workshop input[type=file]")
-    .setInputFiles({
-      name: "hostile-name.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(payload)),
-    });
+  await page.locator("#workshop input[type=file]").setInputFiles({
+    name: "hostile-name.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(payload)),
+  });
   await expect(page.getByLabel("Map name", { exact: true })).toHaveValue(
     "<img src=x onerror=alert(1)>",
   );
@@ -289,13 +291,11 @@ test("workshop edits tiles, undoes, saves in IndexedDB and imports an inert map 
     "-S,1,13,9,0",
     "-S,2,3,1,0",
   ].join("\r\n");
-  await page
-    .locator("#workshop input[type=file]")
-    .setInputFiles({
-      name: "multi.sch",
-      mimeType: "text/plain",
-      buffer: Buffer.from(sch),
-    });
+  await page.locator("#workshop input[type=file]").setInputFiles({
+    name: "multi.sch",
+    mimeType: "text/plain",
+    buffer: Buffer.from(sch),
+  });
   const selection = page.getByRole("dialog", {
     name: "Choose two player starts",
   });
@@ -352,9 +352,11 @@ test("narrow touch layout keeps the arena visible and offers touch controls in p
   expect(bounds!.width).toBeGreaterThan(200);
   expect(bounds!.x).toBeGreaterThanOrEqual(0);
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(391);
-  await expect(page.locator("#battle-announcement")).toBeHidden({
-    timeout: 10_000,
-  });
+  await expect(page.locator("#battle")).toHaveAttribute(
+    "data-phase",
+    "active",
+    { timeout: 10_000 },
+  );
   const direction = page.getByRole("button", {
     name: "Move right",
     exact: true,

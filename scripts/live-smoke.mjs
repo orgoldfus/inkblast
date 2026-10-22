@@ -27,7 +27,7 @@ try {
   await page.locator("#setup-form select[name=targetScore]").selectOption("1");
   await page.getByRole("button", { name: "START MATCH ↗" }).click();
   await page.locator("#battle").waitFor({ state: "visible" });
-  await page.waitForTimeout(3000);
+  await page.waitForSelector('#battle[data-phase="active"]');
   await page.keyboard.press("Space");
   await page.waitForTimeout(1800);
   await page.screenshot({ path: "artifacts/live-battle.png", fullPage: true });

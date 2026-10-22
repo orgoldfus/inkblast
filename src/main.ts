@@ -221,6 +221,7 @@ function startRound(): void {
   }
   replayInputs = [];
   replayStart = structuredClone(state);
+  battle.dataset.phase = state.phase;
   home.hidden = true;
   battle.hidden = false;
   el("workshop").hidden = true;
@@ -407,6 +408,7 @@ function finishRound(): void {
   el("next-button").focus();
 }
 function updateHud(): void {
+  battle.dataset.phase = state.phase;
   const seconds = Math.max(0, Math.ceil(state.remaining / TICK_RATE));
   const signature = `${seconds}:${state.phase}:${Math.ceil(state.countdown / TICK_RATE)}:${state.players.map((p) => [p.capacity, p.range, p.abilities.join(), p.diseases.map((d) => d.type).join(), p.alive].join(":")).join("/")}`;
   if (signature === previousHud) return;
