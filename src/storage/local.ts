@@ -20,6 +20,9 @@ let database: Promise<IDBDatabase> | undefined;
 let memorySettings = { ...DEFAULT_SETTINGS };
 const memoryMaps = new Map<string, Scheme>();
 let memoryProgress = { ...EMPTY_PROGRESS, seenThemes: [] as string[] };
+let unsavedSettings = false;
+let unsavedProgress = false;
+const unsavedMaps = new Set<string>();
 export let storageWarning = "";
 
 export function normalizeSettings(value: unknown): MatchSettings {
@@ -72,6 +75,7 @@ export function normalizeSettings(value: unknown): MatchSettings {
 }
 
 export async function loadSettings(): Promise<MatchSettings> {
+  if (unsavedSettings) return { ...memorySettings };
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (raw) {
@@ -88,16 +92,20 @@ export async function loadSettings(): Promise<MatchSettings> {
   }
   return { ...memorySettings };
 }
-export async function saveSettings(settings: MatchSettings): Promise<void> {
+export async function saveSettings(settings: MatchSettings): Promise<boolean> {
   memorySettings = normalizeSettings(settings);
+  unsavedSettings = true;
   try {
     localStorage.setItem(
       SETTINGS_KEY,
       JSON.stringify({ version: 1, settings: memorySettings }),
     );
+    unsavedSettings = false;
+    return true;
   } catch {
     storageWarning =
       "Settings could not be saved on this device. Changes last for this session only.";
+    return false;
   }
 }
 
@@ -152,6 +160,7 @@ async function operate<T>(
 }
 
 export async function loadMaps(): Promise<Scheme[]> {
+  const beforeRead = new Map(memoryMaps);
   try {
     const values = await operate<unknown[]>("maps", "readonly", (store) =>
       store.getAll(),
@@ -160,7 +169,13 @@ export async function loadMaps(): Promise<Scheme[]> {
       const checked = validateScheme(value);
       return checked.scheme ? [checked.scheme] : [];
     });
-    maps.forEach((map) => memoryMaps.set(map.id, map));
+    maps.forEach((map) => {
+      if (
+        !unsavedMaps.has(map.id) &&
+        memoryMaps.get(map.id) === beforeRead.get(map.id)
+      )
+        memoryMaps.set(map.id, map);
+    });
   } catch {
     storageWarning =
       "Map storage is unavailable. Export JSON to keep a backup; changes last for this session only.";
@@ -171,21 +186,26 @@ export async function saveMap(scheme: Scheme): Promise<void> {
   const checked = validateScheme(scheme);
   if (!checked.scheme) throw new Error(checked.errors.join(" "));
   memoryMaps.set(scheme.id, checked.scheme);
+  unsavedMaps.add(scheme.id);
   try {
     await operate("maps", "readwrite", (store) => store.put(checked.scheme));
+    if (memoryMaps.get(scheme.id) === checked.scheme)
+      unsavedMaps.delete(scheme.id);
   } catch {
     storageWarning =
       "Map saved for this session only. Device storage failed; export JSON to keep your work.";
   }
 }
 export async function deleteMap(id: string): Promise<void> {
+  memoryMaps.delete(id);
+  unsavedMaps.add(id);
   try {
     await operate("maps", "readwrite", (store) => store.delete(id));
+    if (!memoryMaps.has(id)) unsavedMaps.delete(id);
   } catch {
     storageWarning =
       "Device storage failed. This map may reappear after reload.";
   }
-  memoryMaps.delete(id);
 }
 
 export function normalizeProgress(value: unknown): Progress {
@@ -211,10 +231,15 @@ export function normalizeProgress(value: unknown): Progress {
   return result;
 }
 export async function loadProgress(): Promise<Progress> {
+  if (unsavedProgress)
+    return { ...memoryProgress, seenThemes: [...memoryProgress.seenThemes] };
+  const beforeRead = memoryProgress;
   try {
-    memoryProgress = normalizeProgress(
-      await operate("progress", "readonly", (store) => store.get("record")),
+    const saved = await operate("progress", "readonly", (store) =>
+      store.get("record"),
     );
+    if (memoryProgress === beforeRead && !unsavedProgress)
+      memoryProgress = normalizeProgress(saved);
   } catch {
     storageWarning =
       "Progress is available for this session only; device storage is unavailable.";
@@ -223,10 +248,13 @@ export async function loadProgress(): Promise<Progress> {
 }
 export async function saveProgress(progress: Progress): Promise<void> {
   memoryProgress = normalizeProgress(progress);
+  const saving = memoryProgress;
+  unsavedProgress = true;
   try {
     await operate("progress", "readwrite", (store) =>
-      store.put(memoryProgress, "record"),
+      store.put(saving, "record"),
     );
+    if (memoryProgress === saving) unsavedProgress = false;
   } catch {
     storageWarning =
       "Progress could not be saved on this device; it lasts for this session only.";

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyItem,
   createGame,
+  hazardDirection,
   movementSpeed,
   plantBomb,
   stepGame,
@@ -23,8 +24,55 @@ import {
   createTestGame as arena,
   TEST_THEME as theme,
 } from "./core-fixture";
+import { DIRECTIONS, VECTOR } from "../src/core/grid";
 
 describe("deterministic battle simulation", () => {
+  it.each(["conveyor", "arrows", "hockey"] as const)(
+    "gives opposite starts rotationally equal %s directions",
+    (hazard) => {
+      const state = arena();
+      state.theme = {
+        ...theme,
+        id: hazard,
+        hazard: hazard === "hockey" ? "none" : hazard,
+      };
+      let directedCells = 0;
+      for (let y = 0; y < ROWS; y++)
+        for (let x = 0; x < COLS; x++) {
+          const direction = hazardDirection(state, x, y);
+          const opposite = hazardDirection(state, COLS - 1 - x, ROWS - 1 - y);
+          if (direction) {
+            directedCells++;
+            expect(opposite, `${x},${y}`).not.toBeNull();
+            expect(VECTOR[opposite!].x + VECTOR[direction].x).toBe(0);
+            expect(VECTOR[opposite!].y + VECTOR[direction].y).toBe(0);
+          } else expect(opposite, `${x},${y}`).toBeNull();
+        }
+      expect(directedCells).toBeGreaterThan(0);
+      expect(hazardDirection(state, 7, 5)).toBeNull();
+    },
+  );
+
+  it("carries mirrored players and bombs equally on opposite conveyor lanes", () => {
+    const state = arena();
+    state.theme = { ...theme, hazard: "conveyor" };
+    state.players[0].x = 3 * UNIT;
+    state.players[0].y = UNIT;
+    state.players[1].x = 11 * UNIT;
+    state.players[1].y = 9 * UNIT;
+    const first = plantBomb(state, state.players[0], 5, 1)!;
+    const second = plantBomb(state, state.players[1], 9, 9)!;
+    advance(state, 18);
+    expect(state.players[0].x + state.players[1].x).toBe((COLS - 1) * UNIT);
+    expect(state.players[0].y + state.players[1].y).toBe((ROWS - 1) * UNIT);
+    expect(first.x + second.x).toBe(COLS - 1);
+    expect(first.y + second.y).toBe(ROWS - 1);
+    expect(first.x).toBeGreaterThan(5);
+    expect(second.direction).toBe(
+      DIRECTIONS[(DIRECTIONS.indexOf(first.direction) + 2) % 4],
+    );
+  });
+
   it("keeps movement inside walls and assists a slightly off-center turn", () => {
     const state = arena(),
       player = state.players[0];

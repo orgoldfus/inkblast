@@ -429,14 +429,21 @@ export function plantBomb(
   return bomb;
 }
 
+export function projectThrow(bomb: Bomb, direction: Direction): Bomb {
+  const vector = VECTOR[direction];
+  return {
+    ...bomb,
+    x: wrapBoard(bomb.x + vector.x * 3, COLS),
+    y: wrapBoard(bomb.y + vector.y * 3, ROWS),
+    state: "airborne",
+    direction,
+    travel: 24,
+    passThrough: [],
+  };
+}
+
 function launch(state: GameState, bomb: Bomb, player: Player): void {
-  bomb.state = "airborne";
-  bomb.direction = player.direction;
-  bomb.travel = 24;
-  const vector = VECTOR[player.direction];
-  bomb.x = wrapBoard(bomb.x + vector.x * 3, COLS);
-  bomb.y = wrapBoard(bomb.y + vector.y * 3, ROWS);
-  bomb.passThrough = [];
+  Object.assign(bomb, projectThrow(bomb, player.direction));
   player.carrying = null;
   state.events.push({ type: "throw", x: bomb.x, y: bomb.y, player: player.id });
 }
@@ -687,14 +694,23 @@ export function hazardDirection(
   x: number,
   y: number,
 ): Direction | null {
+  const mirrored =
+    y > (ROWS - 1) / 2 || (y === (ROWS - 1) / 2 && x > (COLS - 1) / 2);
+  const sourceX = mirrored ? COLS - 1 - x : x;
+  const sourceY = mirrored ? ROWS - 1 - y : y;
+  if (x === (COLS - 1) / 2 && y === (ROWS - 1) / 2) return null;
+  const orient = (direction: Direction): Direction =>
+    mirrored ? opposite(direction) : direction;
   if (state.theme.hazard === "conveyor" && y % 2 === 1 && x > 1 && x < COLS - 2)
-    return y % 4 === 1 ? "right" : "left";
+    return orient(sourceY % 4 === 1 ? "right" : "left");
   if (
     (state.theme.hazard === "arrows" || state.theme.id === "hockey") &&
     x % 4 === 3 &&
     y % 4 === 1
   )
-    return DIRECTIONS[(Math.floor(x / 4) + Math.floor(y / 4)) % 4];
+    return orient(
+      DIRECTIONS[(Math.floor(sourceX / 4) + Math.floor(sourceY / 4)) % 4],
+    );
   return null;
 }
 

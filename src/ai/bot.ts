@@ -1,5 +1,17 @@
-import { DIRECTIONS, VECTOR, blastCells, bombAt, tileAt } from "../core/grid";
-import { hasDisease, hazardDirection, movementSpeed } from "../core/simulation";
+import {
+  DIRECTIONS,
+  VECTOR,
+  blastCells,
+  bombAt,
+  opposite,
+  tileAt,
+} from "../core/grid";
+import {
+  hasDisease,
+  hazardDirection,
+  movementSpeed,
+  projectThrow,
+} from "../core/simulation";
 import { RULES } from "../rules/settings";
 import {
   UNIT,
@@ -27,9 +39,36 @@ interface BotMemory {
   goal: Point | null;
   nextPlant: number;
   lastBomb: boolean;
+  lastAction: boolean;
   escaping: boolean;
 }
 const memories = new WeakMap<GameState, Map<number, BotMemory>>();
+const STRATEGIES = {
+  easy: {
+    depth: 9,
+    brick: 12,
+    pursuit: 0.3,
+    attack: 0,
+    plantDelay: 65,
+  },
+  normal: {
+    depth: 16,
+    brick: 10,
+    pursuit: 0.5,
+    attack: 5,
+    plantDelay: 35,
+  },
+  hard: {
+    depth: 24,
+    brick: 8,
+    pursuit: 0.8,
+    attack: 12,
+    plantDelay: 22,
+  },
+} as const;
+
+const blastRange = (player: Player): number =>
+  hasDisease(player, "weak") ? 1 : player.range;
 
 function bombFootprint(state: GameState, bomb: Bomb): Point[] {
   const points = new Map<number, Point>();
@@ -85,7 +124,18 @@ export function dangerForecast(state: GameState): Map<number, Danger[]> {
     bombs.map((bomb) => [bomb.id, bombFootprint(state, bomb)]),
   );
   const times = new Map(
-    bombs.map((b) => [b.id, b.kind === "trigger" ? 90 : Math.max(0, b.fuse)]),
+    bombs.map((bomb) => [
+      bomb.id,
+      bomb.state !== "airborne" &&
+      state.flames.some(
+        (flame) =>
+          flame.until > state.tick && flame.x === bomb.x && flame.y === bomb.y,
+      )
+        ? 0
+        : bomb.kind === "trigger"
+          ? 90
+          : Math.max(0, bomb.fuse),
+    ]),
   );
   for (let pass = 0; pass < bombs.length; pass++) {
     let changed = false;
@@ -190,7 +240,7 @@ function escapeRoute(
     owner: player.id,
     x,
     y,
-    range: hasDisease(player, "weak") ? 1 : player.range,
+    range: blastRange(player),
     fuse,
     state: "resting",
     kind: player.abilities.includes("jelly") ? "jelly" : "regular",
@@ -226,13 +276,51 @@ function usefulPlant(state: GameState, player: Player): boolean {
   const x = cellOf(player.x),
     y = cellOf(player.y),
     enemy = state.players[1 - player.id];
-  return blastCells(state, x, y, player.range).some(
+  return blastCells(state, x, y, blastRange(player)).some(
     (point) =>
       tileAt(state.cells, point.x, point.y) === "brick" ||
       (enemy.alive &&
         point.x === cellOf(enemy.x) &&
         point.y === cellOf(enemy.y)),
   );
+}
+
+function safeThrow(state: GameState, player: Player, bomb: Bomb): boolean {
+  const thrown = projectThrow(bomb, player.direction);
+  // An imminent fuse explodes in flight, before a landing can redirect the bomb.
+  if (bomb.fuse > thrown.travel || bomb.kind === "trigger") return false;
+  const forecast = dangerForecast({
+    ...state,
+    bombs: state.bombs.map((other) => (other.id === bomb.id ? thrown : other)),
+  });
+  return !dangerous(
+    forecast,
+    cellOf(player.x),
+    cellOf(player.y),
+    0,
+    Math.max(90, bomb.fuse) + RULES.flame,
+  );
+}
+
+function walkingDistances(
+  state: GameState,
+  target: Point,
+): Map<number, number> {
+  const distances = new Map([[cellIndex(target.x, target.y), 0]]);
+  const queue = [target];
+  for (let index = 0; index < queue.length; index++) {
+    const point = queue[index];
+    for (const direction of DIRECTIONS) {
+      const vector = VECTOR[direction],
+        x = point.x + vector.x,
+        y = point.y + vector.y,
+        key = cellIndex(x, y);
+      if (distances.has(key) || tileAt(state.cells, x, y) !== "floor") continue;
+      distances.set(key, distances.get(cellIndex(point.x, point.y))! + 1);
+      queue.push({ x, y });
+    }
+  }
+  return distances;
 }
 
 function chooseGoal(
@@ -242,16 +330,25 @@ function chooseGoal(
   difficulty: MatchSettings["difficulty"],
 ): Route | undefined {
   const enemy = state.players[1 - player.id];
-  const depth = difficulty === "hard" ? 24 : difficulty === "easy" ? 9 : 16;
-  const options = routes(state, player, danger, depth).filter(
+  const enemyDistances = walkingDistances(state, {
+    x: cellOf(enemy.x),
+    y: cellOf(enemy.y),
+  });
+  const strategy = STRATEGIES[difficulty];
+  const options = routes(state, player, danger, strategy.depth).filter(
     (route) =>
       route.distance > 0 &&
       !dangerous(danger, route.x, route.y, route.at, route.at + 65),
   );
   const score = (route: Route): number => {
-    const pickup = state.pickups.some(
+    const pickup = state.pickups.find(
       (item) => item.x === route.x && item.y === route.y,
     );
+    const pickupScore = pickup
+      ? pickup.type === "disease" || pickup.type === "superDisease"
+        ? -18
+        : 18
+      : 0;
     const brick = DIRECTIONS.some(
       (direction) =>
         tileAt(
@@ -260,8 +357,12 @@ function chooseGoal(
           route.y + VECTOR[direction].y,
         ) === "brick",
     );
-    const enemyDistance =
-      Math.abs(route.x - cellOf(enemy.x)) + Math.abs(route.y - cellOf(enemy.y));
+    const enemyDistance = enemyDistances.get(cellIndex(route.x, route.y)) ?? 0;
+    const attack =
+      enemy.alive &&
+      blastCells(state, route.x, route.y, blastRange(player)).some(
+        (point) => point.x === cellOf(enemy.x) && point.y === cellOf(enemy.y),
+      );
     const variation =
       ((route.x * 17 +
         route.y * 11 +
@@ -270,14 +371,24 @@ function chooseGoal(
         13) /
       13;
     return (
-      (pickup ? 18 : 0) +
-      (brick ? 10 : 0) -
+      pickupScore +
+      (brick ? strategy.brick : 0) +
+      (attack ? strategy.attack : 0) -
       route.distance * 1.15 -
-      enemyDistance * 0.35 +
+      enemyDistance * strategy.pursuit +
       variation
     );
   };
-  return options.sort((a, b) => score(b) - score(a))[0];
+  let best: Route | undefined;
+  let bestScore = -Infinity;
+  for (const option of options) {
+    const value = score(option);
+    if (value > bestScore) {
+      best = option;
+      bestScore = value;
+    }
+  }
+  return best;
 }
 
 function followRoute(
@@ -286,6 +397,8 @@ function followRoute(
   route: Route | undefined,
   memory: BotMemory,
 ): Direction | null {
+  const requested = (direction: Direction): Direction =>
+    hasDisease(player, "reverse") ? opposite(direction) : direction;
   if (memory.goal) {
     const dx = memory.goal.x * UNIT - player.x,
       dy = memory.goal.y * UNIT - player.y;
@@ -296,13 +409,15 @@ function followRoute(
     )
       memory.goal = null;
     else
-      return Math.abs(dx) > Math.abs(dy)
-        ? dx > 0
-          ? "right"
-          : "left"
-        : dy > 0
-          ? "down"
-          : "up";
+      return requested(
+        Math.abs(dx) > Math.abs(dy)
+          ? dx > 0
+            ? "right"
+            : "left"
+          : dy > 0
+            ? "down"
+            : "up",
+      );
   }
   if (!route?.first) return null;
   const vector = VECTOR[route.first];
@@ -310,7 +425,7 @@ function followRoute(
     x: cellOf(player.x) + vector.x,
     y: cellOf(player.y) + vector.y,
   };
-  return route.first;
+  return requested(route.first);
 }
 
 export function botInput(
@@ -328,15 +443,51 @@ export function botInput(
   }
   let memory = players.get(playerId);
   if (!memory) {
-    memory = { goal: null, nextPlant: 0, lastBomb: false, escaping: false };
+    memory = {
+      goal: null,
+      nextPlant: 0,
+      lastBomb: false,
+      lastAction: false,
+      escaping: false,
+    };
     players.set(playerId, memory);
+  }
+  const previousAction = memory.lastAction;
+  memory.lastAction = false;
+  if (player.carrying !== null) {
+    memory.lastAction = !previousAction;
+    return { direction: null, bomb: false, action: !previousAction };
   }
   const danger = dangerForecast(state),
     x = cellOf(player.x),
     y = cellOf(player.y);
+  if (memory.goal) {
+    const travel = Math.ceil(
+      (Math.abs(memory.goal.x * UNIT - player.x) +
+        Math.abs(memory.goal.y * UNIT - player.y)) /
+        movementSpeed(player),
+    );
+    if (dangerous(danger, memory.goal.x, memory.goal.y, 0, travel + 1))
+      memory.goal = null;
+  }
   const urgent = dangerous(danger, x, y, 0, difficulty === "easy" ? 110 : 210);
   if (urgent) {
     const escape = escapeRoute(state, player, danger);
+    if (!escape && !previousAction) {
+      const vector = VECTOR[player.direction];
+      const nearby =
+        bombAt(state, x, y) ?? bombAt(state, x + vector.x, y + vector.y);
+      if (
+        nearby &&
+        (player.abilities.includes("grab")
+          ? nearby.fuse > 3
+          : player.abilities.includes("punch")) &&
+        safeThrow(state, player, nearby)
+      ) {
+        memory.lastAction = true;
+        return { direction: null, bomb: false, action: true };
+      }
+    }
     if (!memory.escaping) memory.goal = null;
     memory.escaping = true;
     memory.lastBomb = false;
@@ -356,18 +507,34 @@ export function botInput(
   const owned = state.bombs.filter((b) => b.owner === playerId);
   const remote = owned.find((b) => b.kind === "trigger");
   if (remote) {
+    const vector = VECTOR[player.direction];
+    const nearby =
+      bombAt(state, x, y) ?? bombAt(state, x + vector.x, y + vector.y);
+    const intercepted =
+      nearby &&
+      (player.abilities.includes("grab") || player.abilities.includes("punch"));
     const blast = blastCells(state, remote.x, remote.y, remote.range);
-    const safe = !blast.some((p) => p.x === x && p.y === y);
+    const triggered = dangerForecast({
+      ...state,
+      bombs: state.bombs.map((bomb) =>
+        bomb.id === remote.id ? { ...bomb, kind: "regular", fuse: 0 } : bomb,
+      ),
+    });
+    const safe = !dangerous(triggered, x, y, 0, RULES.flame);
     if (
       safe &&
+      !intercepted &&
+      !previousAction &&
       (blast.some(
         (p) =>
           p.x === cellOf(state.players[1 - playerId].x) &&
           p.y === cellOf(state.players[1 - playerId].y),
       ) ||
         state.tick % 90 === 0)
-    )
+    ) {
+      memory.lastAction = true;
       return { direction: null, bomb: false, action: true };
+    }
   }
   const centered =
     Math.abs(player.x - x * UNIT) <= 100 &&
@@ -385,9 +552,7 @@ export function botInput(
     if (escape) {
       memory.goal = null;
       memory.escaping = true;
-      memory.nextPlant =
-        state.tick +
-        (difficulty === "easy" ? 65 : difficulty === "normal" ? 35 : 22);
+      memory.nextPlant = state.tick + STRATEGIES[difficulty].plantDelay;
       memory.lastBomb = true;
       return {
         direction: followRoute(state, player, escape, memory),

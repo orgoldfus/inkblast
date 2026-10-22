@@ -135,9 +135,12 @@ function closeDialogs(): void {
     .forEach((dialog) => dialog.close());
 }
 function persist(): void {
-  void saveSettings(settings).catch(() =>
-    toast("Settings could not be saved. You can still play."),
-  );
+  void saveSettings(settings).then((saved) => {
+    if (!saved)
+      toast(
+        "Settings could not be saved on this device. Changes last for this session only.",
+      );
+  });
 }
 function currentScheme(): Scheme {
   return (
@@ -261,6 +264,12 @@ async function startMatch(kind: typeof mode = "battle"): Promise<void> {
     toast("The arena is still loading. Please try again in a moment.");
     return;
   }
+  if (!renderer.graphicsAvailable) {
+    toast(
+      "The graphics connection is still recovering. Please wait for the arena to return.",
+    );
+    return;
+  }
   if (kind !== "practice" && controllerError()) {
     showSetup();
     el("setup-error").textContent = controllerError();
@@ -311,6 +320,11 @@ function pause(reason: string): void {
 }
 function resume(): void {
   if (screen !== "battle") return;
+  if (!renderer.graphicsAvailable) {
+    el("pause-reason").textContent =
+      "The graphics connection is still recovering. Please wait for the arena to return.";
+    return;
+  }
   if (controllerError()) {
     el("pause-reason").textContent = controllerError();
     return;
@@ -455,7 +469,13 @@ function frame(time: number): void {
   if (screen === "battle") controls.pollPause();
   const delta = Math.min(100, time - (previousTime || time));
   previousTime = time;
-  if (renderer && state && screen === "battle" && !paused && !resultHandled) {
+  if (
+    renderer?.graphicsAvailable &&
+    state &&
+    screen === "battle" &&
+    !paused &&
+    !resultHandled
+  ) {
     accumulator += delta;
     let iterations = 0;
     while (accumulator >= 1000 / TICK_RATE && iterations++ < 6) {

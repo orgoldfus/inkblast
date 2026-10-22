@@ -143,6 +143,10 @@ export class ArenaRenderer {
     this.contextLost = true;
   };
 
+  get graphicsAvailable(): boolean {
+    return !this.contextLost;
+  }
+
   private readonly onContextRestored = (): void => {
     this.contextLost = false;
     this.resize();

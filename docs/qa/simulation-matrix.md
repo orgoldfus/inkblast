@@ -6,7 +6,9 @@ This records Inkblast's browser rules and automated simulation results. It does 
 
 During the first human playtest, the user described movement as responsive and requested slightly faster movement. Base speed changed from 65 to **75 fixed-point units per tick**, a 15.4% increase from 3.9 to 4.5 tiles per second. The 150-tick bomb fuse remained unchanged. Bots derive traversal estimates from the same movement-speed function. Core, AI, all-combination simulation and browser acceptance were repeated after this adjustment; the parent release record contains browser results.
 
-## Current automated coverage
+## Initial release automated coverage
+
+The counts and timing measurements in this section describe the initial release. The later bot/map balance pass is recorded in [balance.md](balance.md) and [acceptance.md](acceptance.md); its added regressions and profiling are separate from these original measurements.
 
 `tests/core.test.ts` has 33 passing scenarios. They cover wall collision/corner assistance; leaving and re-entering bombs; stable chain reactions and brick blockers; late simultaneous deaths; inventory caps/exclusions; trigger bombs and owner death; carrying and expiring carried fuses; full-board punch wrapping; kick/stop/jelly; all disease families and selected precedence/transmission cases; Random eligibility/overrides; warp and trampoline transit; human-only hockey input delay; conveyor/arrow behavior; haunted regeneration; roulette penalties/carryover; imported map and settings validation; perimeter enclosure; and deterministic input replay.
 
@@ -60,3 +62,11 @@ The exact original scheme catalog, original timing parity, dud behavior and dire
 ## Borderless enclosure regression
 
 A focused follow-up verifies every one of the 48 outer edge cells on a fully open imported map: a stationary edge player is eliminated and the round reaches a finished result. Separate full-sequence cases verify one, three and five configured interior rings after the imported perimeter closes. Temporary test-only invulnerability allows the five-ring case to inspect the entire closure: all 165 cells become walls, and removing that protection produces a finished draw within the death-resolution window. Authored wall perimeters still start directly at interior ring one. Limited-depth play continues in the remaining narrowed arena; no new timeout policy was introduced. These four added scenarios pass, and the TypeScript check remains clean. The runtime perimeter handling was already present in the initial release; this follow-up strengthens its regression evidence.
+
+## Bot/map follow-up verification
+
+The selected bot update passes 37 core scenarios, 28 AI scenarios and the two sustained matrix/stress scenarios. The full seven-file suite passes 91 tests. Added cases cover mirrored directional hazards and conveyor motion, visible detour pursuit, disease avoidance and reversed input, fresh flame in a planned route, imminent chains, emergency throws, and safe remote-action priority. The user-approved movement speed remains unchanged.
+
+The final parent verification run exercised 132 combinations over 239,565 updates, with 3,291 plants, 172 deaths, 40 draws and round lengths of 266–3,053 ticks. Both planners plus simulation measured **0.2612 ms p95**, maximum 12.0553 ms. The 1,800-update maximum-inventory scenario reached 20 bombs and 420 overlapping flame entries, with **0.8000 ms p95**, maximum 2.2606 ms. The full suite took 23.32 seconds on this development host.
+
+Goal selection now computes each route score once and preserves first-route tie ordering. These timings remain host observations excluding GPU/display and end-to-end input latency. Comparing them with the initial run does not isolate an optimization speedup because concurrent host load differs. The separate paired balance report records deterministic outcome equivalence and gameplay interpretation limits.

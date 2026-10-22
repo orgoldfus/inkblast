@@ -110,9 +110,13 @@ async function smoke(name, engine) {
       .selectOption("1");
     await page.getByRole("button", { name: "START MATCH ↗" }).click();
     await expect(page.locator("#battle")).toBeVisible();
-    await expect(page.locator("#battle-announcement")).toHaveText("", {
-      timeout: 12_000,
-    });
+    await expect(page.locator("#battle")).toHaveAttribute(
+      "data-phase",
+      "active",
+      {
+        timeout: 12_000,
+      },
+    );
     await page.keyboard.press("Space");
     await expect(page.locator("#result-dialog")).toBeVisible({
       timeout: 15_000,

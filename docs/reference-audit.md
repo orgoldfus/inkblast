@@ -64,7 +64,7 @@ JSON backup is versioned: `{ "format": "inkblast-scheme", "version": 1, "scheme"
 - Short-fuse multipliers, update-count timing and disease cure/transmission need an agreed reference profile.
 - Original level art, exact extra placement, animation timing and music are replaced with original Inkblast presentation.
 - Hidden campaign behavior is externally reported static analysis of visibly unfinished code, never observed running in that source. Inkblast Arcade Tour is a new battle sequence, not a reproduction of that campaign. Original editor shortcut and attract mode are legacy compatibility items, not implied completed features.
-- Direct browser/device coverage, physical gamepads, two human playtest rounds and production performance measurements are separate release gates. Passing unit tests is not evidence of those gates.
+- Physical device/controller coverage, broader human difficulty/map playtests and representative-device performance measurements are separate release gates. Two user playtest rounds informed and confirmed movement speed; they do not establish enjoyment across every map and difficulty. See the current acceptance record for browser evidence.
 
 ## Concrete browser rule profile
 
