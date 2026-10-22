@@ -29,7 +29,7 @@ const ITEM_LABELS: Record<ItemType, string> = {
   random: "SURPRISE!",
 };
 
-const DISEASE_LABELS: Record<Disease, string> = {
+export const DISEASE_LABELS: Record<Disease, string> = {
   slow: "SLOW MOTION",
   fast: "OUT OF CONTROL",
   noBomb: "NO BOMBS",
@@ -41,9 +41,29 @@ const DISEASE_LABELS: Record<Disease, string> = {
   reverse: "REVERSED CONTROLS",
 };
 
+export interface ActiveEffect {
+  type: Disease;
+  seconds: number;
+}
+
+export function activeEffects(player: Player, tick: number): ActiveEffect[] {
+  return player.alive
+    ? player.diseases
+        .filter((disease) => disease.until > tick)
+        .map(({ type, until }) => ({
+          type,
+          seconds: Math.ceil((until - tick) / TICK_RATE),
+        }))
+    : [];
+}
+
 export function pickupFeedback(player: Player, tick: number) {
   const feedback = player.pickupFeedback;
+  const effects = activeEffects(player, tick);
   return {
+    effects,
+    item:
+      player.alive && feedback && feedback.until > tick ? feedback.item : null,
     notice:
       player.alive && feedback && feedback.until > tick
         ? feedback.diseases.length
@@ -53,14 +73,8 @@ export function pickupFeedback(player: Player, tick: number) {
           : ITEM_LABELS[feedback.item]
         : "",
     harmful: Boolean(feedback?.diseases.length),
-    countdown: player.alive
-      ? player.diseases
-          .filter((disease) => disease.until > tick)
-          .map(
-            (disease) =>
-              `${DISEASE_LABELS[disease.type]} · ${Math.ceil((disease.until - tick) / TICK_RATE)}s`,
-          )
-          .join(" / ")
-      : "",
+    countdown: effects
+      .map(({ type, seconds }) => `${DISEASE_LABELS[type]} · ${seconds}s`)
+      .join(" / "),
   };
 }

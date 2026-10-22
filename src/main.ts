@@ -1,4 +1,10 @@
 import "./style.css";
+import {
+  playerScoreMarkup,
+  updatePlayerInventory,
+  itemGuideMarkup,
+  pickupIconMarkup,
+} from "./ui/player-inventory";
 import { ArenaRenderer } from "./render/arena";
 import {
   applyItem,
@@ -61,7 +67,7 @@ app.innerHTML = `
       <div class="preview-panel"><div class="panel-label"><span id="preview-theme">THE ORIGINAL INKBLAST ARENA</span><span>15 × 11 / TWO PLAYERS</span></div><div id="arena-host" aria-label="Inkblast game arena"></div><div class="preview-caption"><span class="caption-tag">A LITTLE CHAOS GOES A LONG WAY.</span><span class="caption-note">No downloads. No accounts. Just one more round.</span></div></div>
       <nav class="mode-links" aria-label="More ways to play"><button id="tour-button"><span class="mode-index">01 / THE ROAD TRIP</span><strong>ARCADE TOUR <span>↗</span></strong><small>Five arenas. One champion.</small></button><button id="workshop-button"><span class="mode-index">02 / MAKE SOME TROUBLE</span><strong>MAP WORKSHOP <span>↗</span></strong><small>Your blocks. Your rules.</small></button><button id="help-button"><span class="mode-index">03 / KNOW YOUR TOOLS</span><strong>FIELD GUIDE <span>↗</span></strong><small>Bombs, boots & bad ideas.</small></button></nav>
     </section>
-    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip"><div class="player-score red"><span class="portrait">1</span><div><strong>PLAYER ONE</strong><span id="p1-items">1 BOMB · 2 FLAME</span><output id="p1-pickup" class="pickup-notice" aria-label="Player 1 pickup" aria-live="polite"></output><span id="p1-effects" class="effect-countdown"></span></div><div id="p1-score" class="score-dots"></div></div><div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div><div class="player-score blue"><span class="portrait">2</span><div><strong id="p2-name">THE COMPUTER</strong><span id="p2-items">1 BOMB · 2 FLAME</span><output id="p2-pickup" class="pickup-notice" aria-label="Player 2 pickup" aria-live="polite"></output><span id="p2-effects" class="effect-countdown"></span></div><div id="p2-score" class="score-dots"></div></div></div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="joystick" data-joystick role="group" aria-label="Movement joystick" aria-describedby="joystick-help"><span class="joystick-base" aria-hidden="true"></span><span class="joystick-stick" aria-hidden="true"></span><span class="joystick-label" aria-hidden="true">MOVE</span></div><span id="joystick-help" class="sr-only">Drag the joystick to move. Release to stop steering. Keyboard controls also work.</span><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
+    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip">${playerScoreMarkup(1)}<div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div>${playerScoreMarkup(2)}</div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="joystick" data-joystick role="group" aria-label="Movement joystick" aria-describedby="joystick-help"><span class="joystick-base" aria-hidden="true"></span><span class="joystick-stick" aria-hidden="true"></span><span class="joystick-label" aria-hidden="true">MOVE</span></div><span id="joystick-help" class="sr-only">Drag the joystick to move. Release to stop steering. Keyboard controls also work.</span><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
     <section id="workshop" hidden></section>
   </main>
   <footer id="home-footer"><span>CRAFTED FOR GOOD OLD-FASHIONED RIVALRY.</span><span>Everything stays on this device. <button id="about-button" class="text-button">About this edition</button></span></footer>
@@ -85,7 +91,7 @@ app.innerHTML = `
   <dialog id="pause-dialog" class="panel-dialog compact"><p class="eyebrow">TAKE A BREATHER</p><h2>FUSE ON HOLD.</h2><p id="pause-reason">Your arena will be right here.</p><button id="resume-button" class="primary">BACK TO THE BLAST</button><button id="restart-button">RESTART MATCH</button><button id="export-replay" class="text-button">Save a replay record</button><button id="leave-button" class="text-button">Leave for main menu</button></dialog>
   <dialog id="result-dialog" class="panel-dialog result-dialog"><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div id="winner-mark" class="winner-mark">1</div><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-score"><span id="result-p1">0</span><small>—</small><span id="result-p2">0</span></div><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-setup">CHANGE THE SETUP</button><button id="result-home" class="text-button">Main menu</button></dialog>
   <dialog id="help-dialog" class="panel-dialog"><div class="dialog-heading"><div><p class="eyebrow">A SHORT COURSE IN CHAOS</p><h2>THE FIELD GUIDE.</h2></div><button data-close class="close-button" aria-label="Close guide">×</button></div><div class="guide-steps"><article><b>01</b><h3>MAKE AN EXIT.</h3><p>Bombs explode in a cross. Solid blocks stop fire; orange bricks break. Turn a corner before your fuse runs out.</p></article><article><b>02</b><h3>TAKE A CHANCE.</h3><p>Broken bricks reveal pickups. Mystery pickups are on by default: one icon, 75% helpful, 25% trouble. Watch your player’s strip for the reveal and a 7-second penalty countdown. Switch them off in match setup for visible items.</p></article><article><b>03</b><h3>THINK ONE BOMB AHEAD.</h3><p>Fire lights other bombs instantly. Trap a rival with a chain reaction—but leave yourself a way out.</p></article></div><div class="item-guide">
-  <p><b>+ BOMB</b> Carry one more active bomb.</p><p><b>♨ FLAME / GOLD</b> Longer blast / maximum range.</p><p><b>» SKATE</b> Move faster through corridors.</p><p><b>↗ KICK</b> Walk into a bomb to kick it; Action stops it.</p><p><b>✊ PUNCH</b> Face a bomb and press Action to launch it.</p><p><b>✋ GRAB</b> Action picks up a nearby bomb; Action throws it.</p><p><b>≋ SPOOGE</b> Action lays a line of your available bombs.</p><p><b>⌁ TRIGGER</b> Action detonates a remote bomb.</p><p><b>◒ JELLY</b> Kicked bombs bounce off obstacles.</p><p><b>☠ DISEASE</b> A temporary surprise: reversed controls, speed changes, automatic bombs and more.</p><p><b>? RANDOM</b> A pickup from the map’s eligible pool.</p><p><b>☠☠ SUPER DISEASE</b> Multiple troublemakers at once.</p></div><p class="field-note">Action priority depends on your loadout. Keep an eye on the inventory strip below your player. Hazards and closing walls vary with your setup.</p><button id="guide-practice" class="primary">TRY PRACTICE ↗</button></dialog>
+  ${itemGuideMarkup()}</div><p class="field-note">Action priority depends on your loadout. Keep an eye on the inventory strip below your player. Hazards and closing walls vary with your setup.</p><button id="guide-practice" class="primary">TRY PRACTICE ↗</button></dialog>
   <dialog id="about-dialog" class="panel-dialog"><div class="dialog-heading"><h2>THE SMALL PRINT.</h2><button data-close class="close-button" aria-label="Close about">×</button></div><p>Inkblast is an original, device-local browser interpretation of classic bomb duels. All artwork and synthesized sound are created for this game.</p><p>Two participants, eleven scenery themes, curated duel layouts, and a local map workshop. Arcade Tour is an Inkblast mode.</p><p>Original-game fidelity is still under verification. Fixed 60 Hz timing, some item interactions, environmental placement, scoring details, and imported scheme behavior may differ from the 1997 game. This build does not claim exact emulation.</p><p>No account, network matches, trackers, or application server. Settings and maps stay in this browser; export maps from the workshop to keep a copy.</p><p id="local-record"></p><div class="dialog-footer"><button id="export-backup">EXPORT DEVICE BACKUP</button><button id="restore-backup">RESTORE BACKUP</button><input id="backup-file" type="file" accept=".json,application/json" hidden></div></dialog>
   <div id="toast" class="toast" role="status" hidden></div>
 `;
@@ -209,6 +215,8 @@ function startRound(): void {
   closeDialogs();
   resultHandled = false;
   paused = false;
+  battle.dataset.paused = "false";
+  battle.classList.toggle("reduced-motion", settings.reducedMotion);
   previousHud = "";
   accumulator = 0;
   controls.clear();
@@ -327,6 +335,7 @@ function goHome(): void {
 function pause(reason: string): void {
   if (screen !== "battle" || state.phase === "finished" || paused) return;
   paused = true;
+  battle.dataset.paused = "true";
   controls.enabled = false;
   controls.clear();
   sound.stop();
@@ -347,6 +356,7 @@ function resume(): void {
   closeDialogs();
   controls.clear();
   paused = false;
+  battle.dataset.paused = "false";
   controls.enabled = true;
   accumulator = 0;
   void sound.unlock();
@@ -355,6 +365,7 @@ function resume(): void {
 }
 function finishRound(): void {
   resultHandled = true;
+  battle.dataset.paused = "true";
   controls.enabled = false;
   sound.stop();
   const winner = state.winner;
@@ -442,7 +453,7 @@ function updateHud(): void {
   const feedback = state.players.map((player) =>
     pickupFeedback(player, state.tick),
   );
-  const signature = `${JSON.stringify(feedback)}:${seconds}:${state.phase}:${Math.ceil(state.countdown / TICK_RATE)}:${state.players.map((p) => [p.capacity, p.range, p.abilities.join(), p.diseases.map((d) => d.type).join(), p.alive].join(":")).join("/")}`;
+  const signature = `${JSON.stringify(feedback)}:${seconds}:${state.phase}:${Math.ceil(state.countdown / TICK_RATE)}:${state.players.map((p) => [p.capacity, p.range, p.speed, p.abilities.join(), p.diseases.map((d) => d.type).join(), p.alive].join(":")).join("/")}`;
   if (signature === previousHud) return;
   previousHud = signature;
   el("round-label").textContent =
@@ -470,14 +481,19 @@ function updateHud(): void {
         : "";
   announcement.hidden = !announcement.textContent;
   state.players.forEach((player, id) => {
-    el(`p${id + 1}-items`).textContent = player.alive
-      ? `${player.capacity} BOMB${player.capacity > 1 ? "S" : ""} · ${player.range} FLAME${player.abilities.length ? " · " + player.abilities.join(" / ").toUpperCase() : ""}`
-      : "OUT — NICE TRY";
+    updatePlayerInventory(player, feedback[id].effects);
     const notice = el(`p${id + 1}-pickup`);
-    if (notice.textContent !== feedback[id].notice)
-      notice.textContent = feedback[id].notice;
+    if (
+      notice.textContent !== feedback[id].notice ||
+      notice.dataset.item !== (feedback[id].item ?? "")
+    ) {
+      const item = feedback[id].item;
+      notice.dataset.item = item ?? "";
+      notice.innerHTML = item
+        ? `${pickupIconMarkup(item, player.pickupFeedback?.diseases ?? [])}<span>${feedback[id].notice}</span>`
+        : "";
+    }
     notice.classList.toggle("harmful", feedback[id].harmful);
-    el(`p${id + 1}-effects`).textContent = feedback[id].countdown;
   });
 }
 function frame(time: number): void {

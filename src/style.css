@@ -495,7 +495,7 @@ footer button {
   padding: 0 16px 12px;
 }
 .battle-screen #arena-host {
-  max-height: calc(100dvh - 225px);
+  max-height: calc(100dvh - 285px);
   aspect-ratio: 15/11;
   width: auto;
   max-width: 100%;
@@ -526,15 +526,20 @@ footer button {
 .player-score {
   border: 1px solid var(--red);
   background: #0b1a26;
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  gap: 12px;
+  padding: 12px 14px;
   min-width: 0;
   border-radius: 4px;
 }
 .player-score.blue {
   border-color: var(--blue);
+}
+.player-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
 }
 .portrait {
   width: 42px;
@@ -554,28 +559,150 @@ footer button {
   background: var(--blue);
   box-shadow: 0 0 0 1px var(--blue);
 }
-.player-score strong {
-  font-family: var(--display);
-  font-size: 23px;
-  letter-spacing: 0.03em;
-  color: var(--red);
-  display: block;
-  line-height: 1;
-}
-.blue strong {
-  color: var(--blue);
-}
-.player-score div:nth-child(2) {
+.player-name {
   min-width: 0;
   flex: 1;
+  font: 800 26px/1 var(--display);
+  letter-spacing: 0.025em;
+  color: var(--red);
 }
-.player-score div:nth-child(2) > span {
+.blue .player-name {
+  color: var(--blue);
+}
+.player-inventory {
+  display: grid;
+  grid-template-columns: max-content max-content minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+}
+.inventory-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 12px;
+  border-right: 1px solid var(--line);
+}
+.inventory-stat img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.inventory-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 33px;
+  font-family: var(--display);
+}
+.inventory-count b {
+  font-size: 42px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+}
+.inventory-count span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.inventory-powers {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.inventory-power {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 40px;
+  font: 800 12px/1.2 var(--display);
+  letter-spacing: 0.02em;
+  color: var(--paper);
+}
+.inventory-power img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+.inventory-effect {
+  color: #ffc282;
+}
+.inventory-effect img {
+  animation: temporary-effect-pulse 2.4s ease-in-out infinite;
+}
+.effect-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--paper);
+  font-size: 11px;
+}
+.battle-screen[data-paused="true"] .inventory-effect img {
+  animation-play-state: paused;
+}
+.battle-screen.reduced-motion .inventory-effect img {
+  animation: none;
+}
+@keyframes temporary-effect-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.inventory-empty {
+  color: var(--muted);
+  font: 800 12px/1.3 var(--display);
+}
+.inventory-empty span {
   display: block;
-  font-size: 9px;
-  line-height: 1.5;
-  color: #b6c5ce;
-  margin-top: 5px;
-  overflow-wrap: anywhere;
+  margin-top: 4px;
+  font:
+    10px/1.4 "Trebuchet MS",
+    sans-serif;
+}
+.player-inventory:has(.inventory-power:nth-child(4)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.player-inventory:has(.inventory-power:nth-child(4))
+  .inventory-stat:nth-child(2) {
+  border-right: 0;
+}
+.player-inventory:has(.inventory-power:nth-child(4)) .inventory-powers {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.player-inventory.is-out {
+  grid-template-columns: 1fr;
+}
+.inventory-out {
+  font: 800 32px/1 var(--display);
+  color: var(--muted);
+}
+.inventory-out small {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 15px;
+}
+.player-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.player-feedback:has(:not(:empty)) {
+  margin-top: 8px;
+}
+.player-feedback > :empty {
+  display: none;
 }
 .score-dots {
   display: flex;
@@ -1004,9 +1131,18 @@ input[type="range"] {
   padding-top: 24px;
 }
 .item-guide p {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 12px;
   line-height: 1.6;
   color: var(--muted);
+}
+.item-guide img {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 .item-guide b {
   display: block;
@@ -1233,8 +1369,57 @@ input[type="range"] {
     font-size: 21px;
     border-radius: 13px;
   }
-  .player-score strong {
+  .player-name {
     font-size: 17px;
+  }
+  .player-heading {
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  .player-inventory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    min-height: 48px;
+  }
+  .inventory-stat {
+    gap: 3px;
+    padding-right: 6px;
+    justify-content: center;
+  }
+  .inventory-stat:nth-child(2) {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .inventory-stat img {
+    width: 36px;
+    height: 42px;
+  }
+  .inventory-count b {
+    font-size: 32px;
+  }
+  .inventory-count span {
+    font-size: 11px;
+  }
+  .inventory-powers,
+  .inventory-empty {
+    grid-column: 1 / -1;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+  .inventory-power {
+    min-width: 32px;
+    font-size: 10px;
+  }
+  .inventory-power img {
+    width: 32px;
+    height: 32px;
+  }
+  .inventory-empty {
+    font-size: 10px;
+  }
+  .inventory-empty span {
+    display: none;
   }
   .score-dots {
     gap: 3px;
@@ -1243,9 +1428,6 @@ input[type="range"] {
   .score-dots i {
     width: 9px;
     height: 9px;
-  }
-  .player-score div:nth-child(2) > span {
-    font-size: 7px;
   }
   .duel-label {
     font-size: 7px;
@@ -1384,11 +1566,34 @@ input[type="range"] {
   .portrait {
     display: none;
   }
-  .player-score strong {
+  .player-name {
     font-size: 16px;
   }
   .score-strip {
-    grid-template-columns: 1fr 53px 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .duel-label {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .duel-label b {
+    font-size: 14px;
+  }
+  .inventory-stat img {
+    width: 28px;
+    height: 36px;
+  }
+  .inventory-count {
+    min-width: 28px;
+  }
+  .inventory-count b {
+    font-size: 28px;
+  }
+  .inventory-count span {
+    font-size: 10px;
   }
   .duel-label span {
     font-size: 6px;
@@ -1481,7 +1686,7 @@ input[type="range"] {
     padding-bottom: 12px;
   }
   .battle-screen #arena-host {
-    max-height: calc(100dvh - 150px - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 205px - env(safe-area-inset-bottom));
   }
   .touch-controls:not(.local-disabled) {
     top: 52%;
@@ -1511,11 +1716,58 @@ input[type="range"] {
   .duel-label {
     font-size: 6px;
   }
-  .player-score strong {
+  .player-name {
     font-size: 14px;
   }
-  .player-score div:nth-child(2) > span {
-    font-size: 6px;
+  .player-heading {
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+  }
+  .player-inventory {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .inventory-stat {
+    justify-content: center;
+    gap: 3px;
+    padding-right: 4px;
+  }
+  .inventory-stat:nth-child(2) {
+    border-right: 0;
+  }
+  .inventory-stat img {
+    width: 28px;
+    height: 32px;
+  }
+  .inventory-count b {
+    font-size: 26px;
+  }
+  .inventory-count span {
+    font-size: 10px;
+  }
+  .inventory-powers,
+  .inventory-empty {
+    grid-column: 1 / -1;
+    padding-top: 4px;
+    border-top: 1px solid var(--line);
+  }
+  .inventory-power {
+    flex-direction: row;
+    min-width: 0;
+    font-size: 10px;
+  }
+  .inventory-power img {
+    width: 24px;
+    height: 24px;
+  }
+  .inventory-empty span {
+    display: none;
+  }
+  .player-feedback:has(:not(:empty)) {
+    margin-top: 4px;
+  }
+  .player-score .pickup-notice {
+    font-size: 11px;
   }
   .touch-actions {
     flex-direction: column;
@@ -1632,18 +1884,18 @@ input[type="range"] {
   font-weight: 700;
 }
 .player-score .pickup-notice {
-  display: block;
-  min-height: 1.3em;
-  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   color: #f9d86c;
   font: 800 clamp(13px, 1.3vw, 19px) / 1.2 var(--display);
   overflow-wrap: anywhere;
 }
-.player-score .pickup-notice.harmful,
-.player-score div:nth-child(2) > .effect-countdown {
-  color: #ffc282;
+.pickup-notice img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
-.player-score div:nth-child(2) > .effect-countdown {
-  font-size: clamp(10px, 0.85vw, 12px);
-  font-weight: 700;
+.player-score .pickup-notice.harmful {
+  color: #ffc282;
 }

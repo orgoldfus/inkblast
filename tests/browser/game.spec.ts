@@ -449,12 +449,11 @@ test("pickup reveals and penalty countdowns stay readable and freeze while pause
   await page.locator("#practice-item").selectOption("mystery");
   for (let attempt = 0; attempt < 60; attempt++) {
     await page.locator("#practice-give").click();
-    if (await page.locator("#p1-effects").textContent()) break;
+    if (await page.locator("#p1-items .inventory-effect").count()) break;
   }
-  const countdown = page.locator("#p1-effects");
-  await expect(countdown).toHaveText(
-    /(SLOW MOTION|LEAKING BOMBS|WEAK FLAMES|REVERSED CONTROLS) · [67]s/,
-  );
+  const effect = page.locator("#p1-items .inventory-effect").first();
+  const countdown = effect.locator(".effect-time");
+  await expect(countdown).toHaveText(/[67]s/);
   await expect(page.locator("#p1-pickup")).toHaveClass(/harmful/);
   await page.screenshot({
     path: testInfo.outputPath("mystery-desktop.png"),
@@ -465,7 +464,9 @@ test("pickup reveals and penalty countdowns stay readable and freeze while pause
   await page.waitForTimeout(1100);
   await expect(countdown).toHaveText(frozen!);
   await page.locator("#resume-button").click();
-  await expect(countdown).toHaveText("", { timeout: 9000 });
+  await expect(page.locator("#p1-items .inventory-effect")).toHaveCount(0, {
+    timeout: 9000,
+  });
   await expect(page.locator("#p1-pickup")).toHaveText("");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("#practice-item").selectOption("disease");

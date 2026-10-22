@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { applyItem, applyMysteryItem, plantBomb } from "../src/core/simulation";
 import { botInput } from "../src/ai/bot";
 import { TICK_RATE, type ItemType } from "../src/core/types";
-import { MYSTERY_RULES, pickupFeedback } from "../src/rules/pickups";
+import {
+  activeEffects,
+  MYSTERY_RULES,
+  pickupFeedback,
+} from "../src/rules/pickups";
 import { normalizeSettings } from "../src/storage/storage";
 import { advance, createTestGame } from "./core-fixture";
 
@@ -14,6 +18,25 @@ function mysteryGame() {
 }
 
 describe("mystery pickups", () => {
+  it("keeps separate timers for overlapping effects and removes expired or eliminated-player effects", () => {
+    const player = mysteryGame().players[0];
+    player.diseases = [
+      { type: "slow", until: 7 * TICK_RATE },
+      { type: "reverse", until: 12 * TICK_RATE },
+      { type: "weak", until: TICK_RATE },
+    ];
+    expect(activeEffects(player, TICK_RATE)).toEqual([
+      { type: "slow", seconds: 6 },
+      { type: "reverse", seconds: 11 },
+    ]);
+    expect(activeEffects(player, 7 * TICK_RATE)).toEqual([
+      { type: "reverse", seconds: 5 },
+    ]);
+    expect(activeEffects(player, 12 * TICK_RATE)).toEqual([]);
+    player.alive = false;
+    expect(activeEffects(player, TICK_RATE)).toEqual([]);
+  });
+
   it("defaults older settings to on and preserves an explicit opt-out", () => {
     expect(normalizeSettings({}).mysteryPickups).toBe(true);
     expect(normalizeSettings({ mysteryPickups: false }).mysteryPickups).toBe(
