@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Controls } from "../src/input/controls";
+import {
+  Controls,
+  DEFAULT_BINDINGS,
+  SOLO_BINDINGS,
+} from "../src/input/controls";
 import { Sound } from "../src/audio/sound";
 import { DEFAULT_SETTINGS } from "../src/rules/settings";
 
@@ -47,6 +51,49 @@ afterEach(() => {
 });
 
 describe("duel controls", () => {
+  it.each(["wasd", "arrows"] as const)(
+    "uses the %s solo preset for every direction, bomb and action",
+    (preset) => {
+      controls = new Controls();
+      controls.solo = true;
+      controls.soloBinding = { ...SOLO_BINDINGS[preset] };
+      controls.enabled = true;
+      for (const direction of ["up", "down", "left", "right"] as const) {
+        const code = controls.soloBinding[direction];
+        key("keydown", code);
+        expect(controls.read(0).direction).toBe(direction);
+        expect(controls.read(1).direction).toBeNull();
+        key("keyup", code);
+        expect(controls.read(0).direction).toBeNull();
+      }
+      key("keydown", "Space");
+      key("keyup", "Space");
+      key("keydown", "KeyE");
+      key("keyup", "KeyE");
+      expect(controls.read(0)).toMatchObject({ bomb: true, action: true });
+      expect(controls.read(0)).toMatchObject({ bomb: false, action: false });
+      const other = preset === "arrows" ? "KeyW" : "ArrowUp";
+      key("keydown", other);
+      expect(controls.read(0).direction).toBeNull();
+    },
+  );
+
+  it("restores independent local controls after playing solo with arrows", () => {
+    controls = new Controls();
+    controls.solo = true;
+    controls.soloBinding = { ...SOLO_BINDINGS.arrows };
+    controls.enabled = true;
+    key("keydown", "ArrowRight");
+    expect(controls.read(0).direction).toBe("right");
+    controls.clear();
+    controls.solo = false;
+    key("keydown", "KeyA");
+    key("keydown", "ArrowRight");
+    expect(controls.read(0).direction).toBe("left");
+    expect(controls.read(1).direction).toBe("right");
+    expect(controls.bindings).toEqual(DEFAULT_BINDINGS);
+  });
+
   it("keeps the latest held direction and queues a short bomb press exactly once", () => {
     controls = new Controls();
     controls.enabled = true;

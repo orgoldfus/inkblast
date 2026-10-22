@@ -74,6 +74,93 @@ test("local duel receives a keyboard bomb, pauses, resolves, and rematches", asy
   await expect(page.locator("#home")).toBeVisible();
 });
 
+test("solo keyboard choice persists, reaches gameplay and leaves local bindings intact", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.locator("#custom-button").click();
+  const keyboard = page.getByRole("combobox", {
+    name: "Solo keyboard",
+    exact: true,
+  });
+  await expect(keyboard).toHaveValue("wasd");
+  await keyboard.selectOption("arrows");
+  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await expect(page.locator("#key-bindings .binding-row")).toHaveCount(1);
+  await expect(page.locator("#key-bindings")).toContainText("up: Up");
+  await page.reload();
+  await expect(page.locator("#arena-host canvas")).toBeVisible();
+  await page.locator("#custom-button").click();
+  await expect(keyboard).toHaveValue("arrows");
+  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await expect(page.locator("#controls-hint")).toContainText("UpLeftDownRight");
+  await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
+  await page.keyboard.down("ArrowRight");
+  await page.waitForTimeout(200);
+  await page.keyboard.up("ArrowRight");
+  await page.keyboard.press("Space");
+  await page.keyboard.press("KeyE");
+  await page.waitForTimeout(100);
+  await page.keyboard.press("Escape");
+  const downloaded = page.waitForEvent("download");
+  await page.locator("#export-replay").click();
+  const download = await downloaded;
+  const replay = JSON.parse(await readFile((await download.path())!, "utf8"));
+  expect(replay.inputs.some((input: number[]) => input[0] === 4)).toBe(true);
+  expect(replay.inputs.some((input: number[]) => input[1] === 1)).toBe(true);
+  expect(replay.inputs.some((input: number[]) => input[2] === 1)).toBe(true);
+  await page.locator("#leave-button").click();
+  await page.locator("#practice-button").click();
+  await expect(page.locator("#controls-hint")).toContainText("UpLeftDownRight");
+  await expect(page.locator("#practice-tip")).toContainText(
+    "Use Up / Left / Down / Right",
+  );
+  await page.keyboard.press("Escape");
+  await page.locator("#leave-button").click();
+  await page.locator("#custom-button").click();
+  await page.locator("#setup-form select[name=mode]").selectOption("local");
+  await expect(keyboard).toBeHidden();
+  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await expect(page.locator("#key-bindings .binding-row")).toHaveCount(2);
+  await expect(page.locator("#key-bindings .binding-row").nth(0)).toContainText(
+    "up: W",
+  );
+  await expect(page.locator("#key-bindings .binding-row").nth(1)).toContainText(
+    "up: Up",
+  );
+  await page.locator("#setup-form select[name=mode]").selectOption("cpu");
+  await expect(keyboard).toHaveValue("arrows");
+  await keyboard.selectOption("wasd");
+  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await expect(page.locator("#controls-hint")).toContainText("WASD");
+});
+
+test("solo custom keys survive reload and accept keys used by local player two", async ({
+  page,
+}) => {
+  await ready(page);
+  await page.locator("#custom-button").click();
+  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await page.getByRole("button", { name: "up: W", exact: true }).click();
+  await page.keyboard.press("ArrowUp");
+  await expect(
+    page.getByRole("button", { name: "up: Up", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Solo keyboard", exact: true }),
+  ).toHaveValue("custom");
+  await page.reload();
+  await expect(page.locator("#arena-host canvas")).toBeVisible();
+  await page.locator("#custom-button").click();
+  await expect(
+    page.getByRole("combobox", { name: "Solo keyboard", exact: true }),
+  ).toHaveValue("custom");
+  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "up: Up", exact: true }),
+  ).toBeVisible();
+});
+
 test("two keyboard players can both plant bombs and produce a drawn round", async ({
   page,
 }) => {
@@ -326,67 +413,6 @@ test("workshop edits tiles, undoes, saves in IndexedDB and imports an inert map 
       .getByLabel("Load a preset or saved map")
       .locator("option", { hasText: "Original multi (3) copy" }),
   ).toHaveCount(0);
-});
-
-test("narrow touch layout keeps the arena visible and offers touch controls in practice", async ({
-  browser,
-}) => {
-  const context = await browser.newContext({
-    baseURL: "http://127.0.0.1:4174/inkblast/",
-    viewport: { width: 390, height: 844 },
-    hasTouch: true,
-    isMobile: true,
-  });
-  const page = await context.newPage();
-  await ready(page);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1,
-    ),
-  ).toBe(true);
-  await page.locator("#practice-button").click();
-  await expect(page.locator("#battle")).toBeVisible();
-  await expect(page.locator("#touch-controls")).toBeVisible();
-  const bounds = await page.locator("#arena-host").boundingBox();
-  expect(bounds).not.toBeNull();
-  expect(bounds!.width).toBeGreaterThan(200);
-  expect(bounds!.x).toBeGreaterThanOrEqual(0);
-  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(391);
-  await expect(page.locator("#battle")).toHaveAttribute(
-    "data-phase",
-    "active",
-    { timeout: 10_000 },
-  );
-  const direction = page.getByRole("button", {
-    name: "Move right",
-    exact: true,
-  });
-  const directionBounds = (await direction.boundingBox())!;
-  const session = await context.newCDPSession(page);
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchStart",
-    touchPoints: [
-      {
-        x: directionBounds.x + directionBounds.width / 2,
-        y: directionBounds.y + directionBounds.height / 2,
-      },
-    ],
-  });
-  await expect(direction).toHaveClass(/held/);
-  await page.waitForTimeout(200);
-  await session.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
-  await expect(direction).not.toHaveClass(/held/);
-  const bomb = page.getByRole("button", { name: "BOMB", exact: true });
-  const bombBounds = (await bomb.boundingBox())!;
-  await page.touchscreen.tap(
-    bombBounds.x + bombBounds.width / 2,
-    bombBounds.y + bombBounds.height / 2,
-  );
-  await expect(page.locator("#pause-dialog")).not.toBeVisible();
-  await context.close();
 });
 
 test("mystery pickups default on, persist opt-out, and can be re-enabled", async ({

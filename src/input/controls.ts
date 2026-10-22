@@ -1,4 +1,5 @@
 import { EMPTY_INPUT, type Direction, type InputFrame } from "../core/types";
+import { TouchControls } from "./touch-controls";
 
 export type Binding = Record<Direction | "bomb" | "action", string>;
 export const DEFAULT_BINDINGS: [Binding, Binding] = [
@@ -19,20 +20,42 @@ export const DEFAULT_BINDINGS: [Binding, Binding] = [
     action: "ShiftRight",
   },
 ];
+export const SOLO_BINDINGS = {
+  wasd: DEFAULT_BINDINGS[0],
+  arrows: {
+    ...DEFAULT_BINDINGS[1],
+    bomb: DEFAULT_BINDINGS[0].bomb,
+    action: DEFAULT_BINDINGS[0].action,
+  },
+} satisfies Record<string, Binding>;
+
+export function isBinding(value: unknown): value is Binding {
+  if (!value || typeof value !== "object") return false;
+  const binding = value as Record<string, unknown>;
+  return Object.keys(DEFAULT_BINDINGS[0]).every(
+    (key) =>
+      typeof binding[key] === "string" && /^[A-Za-z0-9]+$/.test(binding[key]),
+  );
+}
+
 export type InputAssignment = "keyboard" | "mixed" | "gamepads";
 export class Controls {
   bindings: [Binding, Binding] = structuredClone(DEFAULT_BINDINGS);
+  soloBinding: Binding = { ...SOLO_BINDINGS.wasd };
+  solo = false;
   assignment: InputAssignment = "keyboard";
   private keys = new Map<string, number>();
   private pressed = new Set<string>();
-  private touch = new Map<number, string>();
-  private touchEdges = new Set<string>();
+  private touch?: TouchControls;
   private padButtons = new Map<number, boolean[]>();
   private pauseButtons = new Map<number, boolean>();
   private order = 0;
   private abort = new AbortController();
   onPause: () => void = () => {};
   enabled = false;
+  get activeBindings(): Binding[] {
+    return this.solo ? [this.soloBinding] : this.bindings;
+  }
   constructor() {
     const options = { signal: this.abort.signal };
     window.addEventListener(
@@ -53,7 +76,7 @@ export class Controls {
           return;
         }
         if (
-          !this.bindings.some((binding) =>
+          !this.activeBindings.some((binding) =>
             Object.values(binding).includes(event.code),
           )
         )
@@ -74,55 +97,8 @@ export class Controls {
     window.addEventListener("blur", () => this.clear(), options);
   }
   bindTouch(host: HTMLElement): void {
-    const options = { signal: this.abort.signal };
-    host.addEventListener(
-      "pointerdown",
-      (event) => {
-        const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
-          "[data-control]",
-        );
-        if (!button || !this.enabled) return;
-        event.preventDefault();
-        button.setPointerCapture(event.pointerId);
-        const value = button.dataset.control!;
-        this.touch.set(event.pointerId, value);
-        this.touchEdges.add(value);
-        button.classList.add("held");
-      },
-      options,
-    );
-    host.addEventListener(
-      "pointermove",
-      (event) => {
-        if (!this.enabled || !this.touch.has(event.pointerId)) return;
-        const previous = this.touch.get(event.pointerId)!;
-        if (previous === "bomb" || previous === "action") return;
-        const button = document
-          .elementFromPoint(event.clientX, event.clientY)
-          ?.closest<HTMLButtonElement>("[data-control]");
-        const next =
-          button && host.contains(button) ? button.dataset.control : null;
-        if (
-          !next ||
-          next === previous ||
-          !["up", "down", "left", "right"].includes(next)
-        )
-          return;
-        host
-          .querySelector(`[data-control="${previous}"]`)
-          ?.classList.remove("held");
-        this.touch.set(event.pointerId, next);
-        button!.classList.add("held");
-      },
-      options,
-    );
-    const release = (event: PointerEvent) => {
-      this.touch.delete(event.pointerId);
-      (event.target as HTMLElement).closest("button")?.classList.remove("held");
-    };
-    host.addEventListener("pointerup", release, options);
-    host.addEventListener("pointercancel", release, options);
-    host.addEventListener("lostpointercapture", release, options);
+    this.touch?.destroy();
+    this.touch = new TouchControls(host, () => this.enabled);
   }
   pollPause(): void {
     let pausePressed = false;
@@ -144,8 +120,8 @@ export class Controls {
     );
   }
   read(player: 0 | 1): InputFrame {
-    if (!this.enabled) return { ...EMPTY_INPUT };
-    const binding = this.bindings[player];
+    if (!this.enabled || (this.solo && player === 1)) return { ...EMPTY_INPUT };
+    const binding = this.activeBindings[player];
     const usesKeyboard =
       this.assignment === "keyboard" ||
       (this.assignment === "mixed" && player === 0);
@@ -162,14 +138,10 @@ export class Controls {
       frame.action = this.pressed.delete(binding.action);
     }
     if (player === 0) {
-      for (const value of this.touch.values()) {
-        if (["up", "down", "left", "right"].includes(value))
-          frame.direction = value as Direction;
-      }
-      const bomb = this.touchEdges.delete("bomb");
-      const action = this.touchEdges.delete("action");
-      frame.bomb ||= bomb;
-      frame.action ||= action;
+      const touch = this.touch?.read();
+      if (touch?.direction) frame.direction = touch.direction;
+      frame.bomb ||= touch?.bomb ?? false;
+      frame.action ||= touch?.action ?? false;
     }
     const pads = this.gamepads();
     const padIndex = this.assignment === "mixed" ? player - 1 : player;
@@ -202,11 +174,7 @@ export class Controls {
   clear(): void {
     this.keys.clear();
     this.pressed.clear();
-    this.touch.clear();
-    this.touchEdges.clear();
-    document
-      .querySelectorAll("[data-control].held")
-      .forEach((button) => button.classList.remove("held"));
+    this.touch?.clear();
     this.padButtons.clear();
     this.pauseButtons.clear();
     for (const pad of this.gamepads()) {
@@ -220,6 +188,7 @@ export class Controls {
   destroy(): void {
     this.abort.abort();
     this.clear();
+    this.touch?.destroy();
   }
 }
 

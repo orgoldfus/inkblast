@@ -17,7 +17,13 @@ import { loadTour, saveTour } from "./storage/tour";
 import { pickupFeedback } from "./rules/pickups";
 import { DEFAULT_SETTINGS } from "./rules/settings";
 import { THEMES, SCHEMES } from "./content/catalog";
-import { Controls, keyLabel, type InputAssignment } from "./input/controls";
+import {
+  Controls,
+  isBinding,
+  keyLabel,
+  SOLO_BINDINGS,
+  type InputAssignment,
+} from "./input/controls";
 import { Sound } from "./audio/sound";
 import { MapEditor } from "./editor/editor";
 import {
@@ -55,7 +61,7 @@ app.innerHTML = `
       <div class="preview-panel"><div class="panel-label"><span id="preview-theme">THE ORIGINAL INKBLAST ARENA</span><span>15 × 11 / TWO PLAYERS</span></div><div id="arena-host" aria-label="Inkblast game arena"></div><div class="preview-caption"><span class="caption-tag">A LITTLE CHAOS GOES A LONG WAY.</span><span class="caption-note">No downloads. No accounts. Just one more round.</span></div></div>
       <nav class="mode-links" aria-label="More ways to play"><button id="tour-button"><span class="mode-index">01 / THE ROAD TRIP</span><strong>ARCADE TOUR <span>↗</span></strong><small>Five arenas. One champion.</small></button><button id="workshop-button"><span class="mode-index">02 / MAKE SOME TROUBLE</span><strong>MAP WORKSHOP <span>↗</span></strong><small>Your blocks. Your rules.</small></button><button id="help-button"><span class="mode-index">03 / KNOW YOUR TOOLS</span><strong>FIELD GUIDE <span>↗</span></strong><small>Bombs, boots & bad ideas.</small></button></nav>
     </section>
-    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip"><div class="player-score red"><span class="portrait">1</span><div><strong>PLAYER ONE</strong><span id="p1-items">1 BOMB · 2 FLAME</span><output id="p1-pickup" class="pickup-notice" aria-label="Player 1 pickup" aria-live="polite"></output><span id="p1-effects" class="effect-countdown"></span></div><div id="p1-score" class="score-dots"></div></div><div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div><div class="player-score blue"><span class="portrait">2</span><div><strong id="p2-name">THE COMPUTER</strong><span id="p2-items">1 BOMB · 2 FLAME</span><output id="p2-pickup" class="pickup-notice" aria-label="Player 2 pickup" aria-live="polite"></output><span id="p2-effects" class="effect-countdown"></span></div><div id="p2-score" class="score-dots"></div></div></div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="dpad"><button data-control="up" aria-label="Move up">↑</button><button data-control="left" aria-label="Move left">←</button><button data-control="down" aria-label="Move down">↓</button><button data-control="right" aria-label="Move right">→</button></div><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
+    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip"><div class="player-score red"><span class="portrait">1</span><div><strong>PLAYER ONE</strong><span id="p1-items">1 BOMB · 2 FLAME</span><output id="p1-pickup" class="pickup-notice" aria-label="Player 1 pickup" aria-live="polite"></output><span id="p1-effects" class="effect-countdown"></span></div><div id="p1-score" class="score-dots"></div></div><div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div><div class="player-score blue"><span class="portrait">2</span><div><strong id="p2-name">THE COMPUTER</strong><span id="p2-items">1 BOMB · 2 FLAME</span><output id="p2-pickup" class="pickup-notice" aria-label="Player 2 pickup" aria-live="polite"></output><span id="p2-effects" class="effect-countdown"></span></div><div id="p2-score" class="score-dots"></div></div></div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="joystick" data-joystick role="group" aria-label="Movement joystick" aria-describedby="joystick-help"><span class="joystick-base" aria-hidden="true"></span><span class="joystick-stick" aria-hidden="true"></span><span class="joystick-label" aria-hidden="true">MOVE</span></div><span id="joystick-help" class="sr-only">Drag the joystick to move. Release to stop steering. Keyboard controls also work.</span><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
     <section id="workshop" hidden></section>
   </main>
   <footer id="home-footer"><span>CRAFTED FOR GOOD OLD-FASHIONED RIVALRY.</span><span>Everything stays on this device. <button id="about-button" class="text-button">About this edition</button></span></footer>
@@ -65,8 +71,9 @@ app.innerHTML = `
     <label>Arena theme<select name="themeId"></select></label><label>Map layout<select name="schemeId"></select></label>
     <label>First to<select name="targetScore"><option value="1">1 point · quick duel</option><option value="3">3 points</option><option value="5">5 points</option><option value="7">7 points</option><option value="10">10 points</option></select></label>
     <label>Round clock<select name="roundSeconds"><option value="60">1 minute</option><option value="90">1½ minutes</option><option value="120">2 minutes</option><option value="150">2½ minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="0">Unlimited</option></select></label>
-    <label>Controllers<select id="input-assignment"><option value="keyboard">Shared keyboard</option><option value="mixed">Keyboard + gamepad</option><option value="gamepads">Two gamepads</option></select></label><div class="controller-check" id="controller-status">Keyboard ready.</div>
-  </div><label class="check mystery-option"><input type="checkbox" name="mysteryPickups" aria-describedby="mystery-description">Mystery pickups</label><p id="mystery-description" class="field-note">Every pickup looks the same: 75% helpful, 25% trouble. Bad effects last 7 seconds, one at a time. Turn off to reveal each item before collecting.</p><p id="theme-description" class="field-note"></p>
+    <label>Controllers<select id="input-assignment"><option value="keyboard">Shared keyboard</option><option value="mixed">Keyboard + gamepad</option><option value="gamepads">Two gamepads</option></select></label>
+    <label id="solo-keyboard-field">Solo keyboard<select id="solo-keyboard"><option value="wasd">WASD</option><option value="arrows">Arrow keys</option><option value="custom" disabled>Custom keys</option></select></label>
+  </div><p class="field-note" id="controller-status">Keyboard ready.</p><label class="check mystery-option"><input type="checkbox" name="mysteryPickups" aria-describedby="mystery-description">Mystery pickups</label><p id="mystery-description" class="field-note">Every pickup looks the same: 75% helpful, 25% trouble. Bad effects last 7 seconds, one at a time. Turn off to reveal each item before collecting.</p><p id="theme-description" class="field-note"></p>
   <details><summary>Advanced battle rules</summary><div class="settings-grid">
     <label>Score by<select name="scoring"><option value="wins">Round wins</option><option value="kills">Opponent eliminations</option></select></label>
     <label>Closing walls<select name="enclosureDepth"><option value="0">Off</option><option value="1">One ring</option><option value="2">Two rings</option><option value="3">Three rings</option><option value="4">Four rings</option><option value="5">To the center</option></select></label>
@@ -117,6 +124,7 @@ let replayInputs: number[][] = [];
 let replayStart: GameState | null = null;
 const directions = [null, "up", "down", "left", "right"];
 const controls = new Controls();
+const touchScreen = window.matchMedia("(pointer: coarse)");
 const sound = new Sound();
 controls.onPause = () => {
   if (screen === "battle")
@@ -186,12 +194,12 @@ function renderScores(): void {
 }
 function hints(): void {
   const key = (value: string) => `<kbd>${keyLabel(value)}</kbd>`;
-  const a = controls.bindings[0];
+  const a = controls.activeBindings[0];
   const b = controls.bindings[1];
   el("controls-hint").innerHTML =
     controls.assignment === "gamepads"
       ? "<span>STICK / D-PAD <b>MOVE</b></span><span><kbd>A</kbd> BOMB</span><span><kbd>B</kbd> ACTION</span>"
-      : `<span>${key(a.up)}${key(a.left)}${key(a.down)}${key(a.right)} <b>MOVE</b></span><span>${key(a.bomb)} BOMB</span><span>${key(a.action)} ACTION</span>${settings.mode === "local" ? `<span class="p2-hint">P2: ${controls.assignment === "mixed" ? "GAMEPAD · A / B" : `${key(b.up)}${key(b.left)}${key(b.down)}${key(b.right)} · ${key(b.bomb)} / ${key(b.action)}`}</span>` : ""}`;
+      : `<span>${key(a.up)}${key(a.left)}${key(a.down)}${key(a.right)} <b>MOVE</b></span><span>${key(a.bomb)} BOMB</span><span>${key(a.action)} ACTION</span>${!controls.solo ? `<span class="p2-hint">P2: ${controls.assignment === "mixed" ? "GAMEPAD · A / B" : `${key(b.up)}${key(b.left)}${key(b.down)}${key(b.right)} · ${key(b.bomb)} / ${key(b.action)}`}</span>` : ""}`;
   el("touch-controls").classList.toggle(
     "local-disabled",
     settings.mode === "local" && mode !== "practice",
@@ -204,6 +212,7 @@ function startRound(): void {
   previousHud = "";
   accumulator = 0;
   controls.clear();
+  controls.solo = mode === "practice" || settings.mode === "cpu";
   const theme =
     mode === "tour"
       ? THEMES[(tourRound * 2) % THEMES.length]
@@ -514,12 +523,12 @@ function frame(time: number): void {
         const seconds = practiceStarted / TICK_RATE;
         el("practice-tip").textContent =
           seconds < 12
-            ? "01 / MOVE · Use WASD. Your red player is 1. Explore the corridors—you’re safe in practice."
+            ? `01 / MOVE · ${touchScreen.matches ? "Drag the joystick to steer" : `Use ${(["up", "left", "down", "right"] as const).map((direction) => keyLabel(controls.soloBinding[direction])).join(" / ")}`}. Your red player is 1. You’re safe in practice.`
             : seconds < 25
-              ? "02 / PLANT · Tap Space to place a bomb. Move away and turn a corner before it explodes."
+              ? `02 / PLANT · Tap ${touchScreen.matches ? "BOMB" : keyLabel(controls.soloBinding.bomb)} to place a bomb. Move away and turn a corner before it explodes.`
               : seconds < 45
                 ? "03 / POWER UP · Break orange bricks and collect the items underneath. Watch your inventory below."
-                : "04 / READY? · Try trapping the blue practice dummy. Escape pauses the game; leave anytime.";
+                : `04 / READY? · Try trapping the blue practice dummy. ${touchScreen.matches ? "Tap Pause" : "Escape pauses the game"}; leave anytime.`;
       }
       if (state.phase === "finished") {
         finishRound();
@@ -544,6 +553,7 @@ function syncSetup(): void {
       field.value = String(value);
   }
   el<HTMLSelectElement>("input-assignment").value = controls.assignment;
+  controls.solo = settings.mode === "cpu";
   updateThemeDescription();
   syncPickupRule();
   renderBindings();
@@ -583,6 +593,7 @@ function readSetup(): void {
   settings = next;
   controls.assignment = el<HTMLSelectElement>("input-assignment")
     .value as InputAssignment;
+  controls.solo = settings.mode === "cpu";
   sound.configure(
     muted ? { ...settings, music: 0, effects: 0, voices: 0 } : settings,
   );
@@ -607,11 +618,43 @@ function updateThemeDescription(): void {
     local;
 }
 let cancelBinding = () => {};
+function saveBindings(): void {
+  try {
+    localStorage.setItem(
+      "inkblast.bindings.v1",
+      JSON.stringify(controls.bindings),
+    );
+    localStorage.setItem(
+      "inkblast.solo-bindings.v1",
+      JSON.stringify(controls.soloBinding),
+    );
+  } catch {
+    toast(
+      "Keyboard preferences could not be saved. They last for this session only.",
+    );
+  }
+}
+el<HTMLSelectElement>("solo-keyboard").onchange = (event) => {
+  const preset = (event.target as HTMLSelectElement).value;
+  if (preset !== "wasd" && preset !== "arrows") return;
+  controls.soloBinding = { ...SOLO_BINDINGS[preset] };
+  controls.clear();
+  saveBindings();
+};
 function renderBindings(): void {
   cancelBinding();
+  el("solo-keyboard-field").hidden =
+    !controls.solo || controls.assignment === "gamepads";
+  el<HTMLSelectElement>("solo-keyboard").value =
+    Object.entries(SOLO_BINDINGS).find(([, preset]) =>
+      Object.entries(preset).every(
+        ([action, code]) =>
+          controls.soloBinding[action as keyof typeof preset] === code,
+      ),
+    )?.[0] ?? "custom";
   const container = el("key-bindings");
   container.replaceChildren();
-  controls.bindings.forEach((binding, player) => {
+  controls.activeBindings.forEach((binding, player) => {
     const row = document.createElement("div");
     row.className = "binding-row";
     const name = document.createElement("b");
@@ -637,23 +680,15 @@ function renderBindings(): void {
               "ControlRight",
             ].includes(event.code)
           ) {
-            const duplicate = controls.bindings.some((item) =>
+            const duplicate = controls.activeBindings.some((item) =>
               Object.values(item).includes(event.code),
             );
             if (duplicate && event.code !== key) {
               toast("That key is already assigned. Pick another key.");
               return;
             }
-            controls.bindings[player][action as keyof typeof binding] =
-              event.code;
-            try {
-              localStorage.setItem(
-                "inkblast.bindings.v1",
-                JSON.stringify(controls.bindings),
-              );
-            } catch {
-              /* Keyboard bindings remain usable for this session. */
-            }
+            binding[action as keyof typeof binding] = event.code;
+            saveBindings();
           }
           window.removeEventListener("keydown", handler, true);
           renderBindings();
@@ -896,6 +931,7 @@ el("workshop-button").onclick = () => {
 setupForm.onchange = () => {
   updateThemeDescription();
   readSetup();
+  renderBindings();
   updatePreview();
 };
 setupForm.onsubmit = (event) => {
@@ -962,19 +998,20 @@ async function boot(): Promise<void> {
       if (
         Array.isArray(bindings) &&
         bindings.length === 2 &&
-        bindings.every(
-          (binding) =>
-            binding &&
-            ["up", "down", "left", "right", "bomb", "action"].every(
-              (key) =>
-                typeof binding[key] === "string" &&
-                /^[A-Za-z0-9]+$/.test(binding[key]),
-            ),
-        )
+        bindings.every(isBinding)
       )
         controls.bindings = bindings as typeof controls.bindings;
     } catch {
       /* A malformed preferences entry falls back to the visible default keys. */
+    }
+    controls.soloBinding = { ...controls.bindings[0] };
+    try {
+      const binding: unknown = JSON.parse(
+        localStorage.getItem("inkblast.solo-bindings.v1") ?? "null",
+      );
+      if (isBinding(binding)) controls.soloBinding = binding;
+    } catch {
+      /* Existing player-one preferences also work in solo play. */
     }
     document.querySelector<HTMLInputElement>(
       `input[name="mode"][value="${settings.mode}"]`,
