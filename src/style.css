@@ -714,7 +714,6 @@ kbd {
   background: #132836;
   border: 1px solid #73848d;
   border-top: 5px solid var(--orange);
-  border-radius: 4px;
   width: min(760px, calc(100% - 28px));
   max-height: calc(100dvh - 40px);
   padding: 30px;
