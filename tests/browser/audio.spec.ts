@@ -1,3 +1,4 @@
+import { openSettings } from "./menu-helpers";
 import { expect, test } from "@playwright/test";
 
 interface AudioQA {
@@ -50,12 +51,12 @@ test("generated local audio decodes, follows mute and pause, and plays through a
   });
   const sources = () => page.evaluate(() => window.audioQA.sources);
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
+  await expect(page.locator("#quick-play")).toBeEnabled();
   expect(requests).toEqual([]);
-  await page.locator("#custom-button").click();
+  await openSettings(page);
   await page.locator("select[name=mode]").selectOption("local");
   await page.locator("select[name=targetScore]").selectOption("1");
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await expect
     .poll(
       async () => (await sources()).filter((s) => s.loop && !s.stopped).length,

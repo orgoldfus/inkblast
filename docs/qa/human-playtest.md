@@ -6,7 +6,7 @@ The automated balance and browser reports cover reproducible behavior. This shor
 
 The user has already compared difficulty in the development preview and reported: “Hard feels more challenging and fair.” The remaining request is broader pacing and device coverage.
 
-1. Choose **Set up a match → Player vs Computer → First to 1**. Try **Quick Draw**, then **Brick by Brick**, using the same difficulty. The first is intended to produce early contact; the second requires more demolition. Note whether either feels like waiting rather than making useful decisions.
+1. Choose **Options → Match Settings → Computer → First to 1**. Try **Quick Draw**, then **Brick by Brick**, using the same difficulty. The first is intended to produce early contact; the second requires more demolition. Note whether either feels like waiting rather than making useful decisions.
 2. Note whether you understand why you died and whether you could see an escape route. A tougher opponent should not feel like it has different movement or bomb rules.
 3. Report any repeated running in circles, standing still while an attack is available, obviously suicidal plants, or confusing special-item actions. Include the map, theme and difficulty. The pause menu can export a replay record for diagnosis; it stays local unless you choose to share it.
 

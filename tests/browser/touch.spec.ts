@@ -1,3 +1,4 @@
+import { openExtra } from "./menu-helpers";
 import { test, expect, type CDPSession, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
@@ -13,8 +14,8 @@ async function touch(
 
 async function startPractice(page: Page): Promise<void> {
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#practice-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
 }
 
@@ -238,8 +239,8 @@ for (const viewport of [
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto("./");
-    await expect(page.locator("#arena-host canvas")).toBeVisible();
-    await page.locator("#practice-button").click();
+    await expect(page.locator("#quick-play")).toBeEnabled();
+    await openExtra(page, "practice-button");
     const rotate = page.getByRole("dialog", { name: "TURN UP THE CHAOS." });
     await expect(rotate).toBeVisible();
     await expect(page.locator("#battle")).toHaveAttribute(
@@ -331,7 +332,7 @@ for (const insets of [
     });
     const page = await context.newPage();
     await page.goto("./");
-    await expect(page.locator("#arena-host canvas")).toBeVisible();
+    await expect(page.locator("#quick-play")).toBeEnabled();
     await page.locator("#quick-play").click();
     await expect(page.locator("#battle")).toHaveAttribute(
       "data-phase",

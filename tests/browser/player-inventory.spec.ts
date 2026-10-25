@@ -1,3 +1,4 @@
+import { openSettings, openExtra } from "./menu-helpers";
 import { expect, test, type Page } from "@playwright/test";
 
 async function giveItem(page: Page, item: string): Promise<void> {
@@ -7,7 +8,7 @@ async function giveItem(page: Page, item: string): Promise<void> {
 
 test("all pickup icons load in the field guide", async ({ page }) => {
   await page.goto("./");
-  await page.locator("#help-button").click();
+  await openExtra(page, "help-button");
   const icons = page.locator(".item-guide img");
   await expect(icons).toHaveCount(13);
   await expect
@@ -27,13 +28,13 @@ test("the game's reduced-motion setting keeps temporary icons steady", async ({
   page,
 }) => {
   await page.goto("./");
-  await page.locator("#custom-button").click();
-  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await openSettings(page);
+  await openSettings(page, "audio");
   await page.locator('input[name="reducedMotion"]').check();
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await page.locator("#pause-button").click();
   await page.locator("#leave-button").click();
-  await page.locator("#practice-button").click();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   await giveItem(page, "superDisease");
   await expect(
@@ -46,7 +47,7 @@ test("temporary icons blink without restarting on countdown updates and respect 
   page,
 }, testInfo) => {
   await page.goto("./");
-  await page.locator("#practice-button").click();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   await giveItem(page, "kick");
   const effects = page.locator("#p1-items .inventory-effect");
@@ -124,7 +125,7 @@ test("inventory icons track upgrades, exclusive abilities and reset", async ({
   page,
 }, testInfo) => {
   await page.goto("./");
-  await page.locator("#practice-button").click();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   const inventory = page.locator("#p1-items");
   await expect(
@@ -191,7 +192,7 @@ test("full inventories remain inside the player panels at narrow widths", async 
   page,
 }, testInfo) => {
   await page.goto("./");
-  await page.locator("#practice-button").click();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   for (const item of [
     "bomb",

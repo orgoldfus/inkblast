@@ -81,15 +81,15 @@ async function smoke(name, engine) {
         result.externalRequests.push(request.url());
     });
     await page.goto(url);
-    await expect(page.locator("#arena-host canvas")).toBeVisible();
+    await expect(page.locator("#quick-play")).toBeEnabled();
     await expect(
-      page.getByRole("heading", { name: /SMALL ARENA/ }),
+      page.getByRole("heading", { name: "INKBLAST", exact: true }),
     ).toBeVisible();
     await page.screenshot({
       path: path.join(output, `${name}-home.png`),
       fullPage: true,
     });
-    check("Production static load and visible canvas");
+    check("Production static load and ready menu");
     await page.locator("#quick-play").click();
     await expect(page.locator("#battle")).toBeVisible();
     check("Quick Player vs Computer start");
@@ -104,11 +104,12 @@ async function smoke(name, engine) {
     await page.keyboard.press("Escape");
     await page.locator("#leave-button").click();
     await page.locator("#custom-button").click();
+    await page.locator('[data-settings-link="match"]').click();
     await page.locator("#setup-form select[name=mode]").selectOption("local");
     await page
       .locator("#setup-form select[name=targetScore]")
       .selectOption("1");
-    await page.getByRole("button", { name: "START MATCH ↗" }).click();
+    await page.getByRole("button", { name: "START MATCH" }).click();
     await expect(page.locator("#battle")).toBeVisible();
     await expect(page.locator("#battle")).toHaveAttribute(
       "data-phase",
@@ -134,6 +135,7 @@ async function smoke(name, engine) {
     check("One-action rematch");
     await page.keyboard.press("Escape");
     await page.locator("#leave-button").click();
+    await page.locator("#extras-button").click();
     await page.locator("#workshop-button").click();
     const mapName = `${name} persistence smoke`;
     await page.getByLabel("Map name", { exact: true }).fill(mapName);
@@ -141,6 +143,7 @@ async function smoke(name, engine) {
     await page.getByRole("button", { name: "Save map", exact: true }).click();
     await expect(page.locator(".editor-status")).toContainText("Saved");
     await page.reload();
+    await page.locator("#extras-button").click();
     await page.locator("#workshop-button").click();
     await expect(
       page

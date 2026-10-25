@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/style.css"
+        ],
+        "createdAt": "2026-10-25T20:37:34.012Z",
+        "reason": "Agent: .arcade-list button.is-selected::before uses transparent top and bottom borders with a colored left border to draw the triangular arcade selection cursor, not a card accent."
+      }
+    ]
+  }
+}

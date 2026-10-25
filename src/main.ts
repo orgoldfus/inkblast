@@ -1,4 +1,5 @@
 import "./style.css";
+import { installMenuNavigation } from "./ui/menu-navigation";
 import {
   playerScoreMarkup,
   updatePlayerInventory,
@@ -57,37 +58,72 @@ app.innerHTML = `
     <div class="header-actions"><button id="sound-toggle" class="icon-button" aria-label="Mute sound" title="Mute sound">♪</button><button id="fullscreen" class="icon-button" aria-label="Fullscreen" title="Fullscreen">⛶</button><button id="pause-button" hidden>PAUSE Ⅱ</button><span class="edition">THE COMIC ARENA BRAWLER</span></div>
   </header>
   <main>
-    <section id="home" class="home-screen">
-      <div class="intro"><p class="eyebrow"><span class="live-dot"></span> ONE ARENA. TWO RIVALS.</p><h1>SMALL ARENA.<br><em>BIG TROUBLE.</em></h1><p class="dek">Outsmart a rival. Light the fuse.<br>Try to be somewhere else when it goes off.</p>
-        <fieldset class="mode-picker"><legend class="sr-only">Players</legend><label><input name="mode" type="radio" value="cpu" checked><span>YOU <small>vs</small> COMPUTER</span></label><label><input name="mode" type="radio" value="local"><span>YOU <small>vs</small> A FRIEND</span></label></fieldset>
-        <button id="quick-play" class="primary launch">LET’S BLAST <span>↗</span></button>
-        <div class="home-secondary"><button id="custom-button" class="text-button">Set up a match <span>↗</span></button><button id="practice-button" class="text-button">Learn the ropes <span>↗</span></button></div>
-        <button id="resume-tour" class="text-button" hidden>Resume your Arcade Tour ↗</button><div class="home-rule"><span>01</span><p>Plant a bomb. Find your escape.<br><b>The last one standing wins.</b></p></div>
+    <section id="home" class="home-screen" aria-labelledby="menu-title">
+      <div class="arcade-title"><h1 id="menu-title">INKBLAST</h1><p>SMALL ARENA. BIG TROUBLE.</p></div>
+      <div class="menu-content">
+        <nav id="main-menu" class="arcade-list" aria-label="Main menu">
+          <button id="quick-play" data-hint="You against the computer. Straight into the arena.">1 PLAYER</button>
+          <button id="local-play" data-hint="Two players. One keyboard or your own gamepads.">2 PLAYERS</button>
+          <button id="tour-menu" data-hint="Five arenas. One champion.">ARCADE TOUR</button>
+          <button id="custom-button" data-hint="Match rules, controls, sound and display.">OPTIONS</button>
+          <button id="extras-button" data-hint="Practice, map workshop and field guide.">EXTRAS</button>
+        </nav>
+        <nav id="extras-menu" class="arcade-list" aria-label="Extras" hidden>
+          <h2>EXTRAS</h2>
+          <button id="practice-button" data-hint="Learn the controls in a safe arena.">PRACTICE</button>
+          <button id="workshop-button" data-hint="Build a map. Make your own trouble.">MAP WORKSHOP</button>
+          <button id="help-button" data-hint="Bombs, power-ups and how to survive them.">FIELD GUIDE</button>
+          <button id="about-button" data-hint="Local records, device backups and game credits.">ABOUT &amp; BACKUPS</button>
+          <button data-menu-back>BACK</button>
+        </nav>
+        <nav id="tour-menu-list" class="arcade-list" aria-label="Arcade Tour" hidden>
+          <h2>ARCADE TOUR</h2>
+          <button id="resume-tour" hidden>CONTINUE TOUR</button>
+          <button id="tour-button">NEW TOUR</button>
+          <button data-menu-back>BACK</button>
+        </nav>
+        <p id="menu-hint" class="menu-hint" aria-live="polite">You against the computer. Straight into the arena.</p>
       </div>
-      <div class="preview-panel"><div class="panel-label"><span id="preview-theme">THE ORIGINAL INKBLAST ARENA</span><span>15 × 11 / TWO PLAYERS</span></div><div id="arena-host" aria-label="Inkblast game arena"></div><div class="preview-caption"><span class="caption-tag">A LITTLE CHAOS GOES A LONG WAY.</span><span class="caption-note">No downloads. No accounts. Just one more round.</span></div></div>
-      <nav class="mode-links" aria-label="More ways to play"><button id="tour-button"><span class="mode-index">01 / THE ROAD TRIP</span><strong>ARCADE TOUR <span>↗</span></strong><small>Five arenas. One champion.</small></button><button id="workshop-button"><span class="mode-index">02 / MAKE SOME TROUBLE</span><strong>MAP WORKSHOP <span>↗</span></strong><small>Your blocks. Your rules.</small></button><button id="help-button"><span class="mode-index">03 / KNOW YOUR TOOLS</span><strong>FIELD GUIDE <span>↗</span></strong><small>Bombs, boots & bad ideas.</small></button></nav>
+      <p class="menu-keys"><span><kbd>↑</kbd><kbd>↓</kbd> SELECT</span><span><kbd>ENTER</kbd> CONFIRM</span><span><kbd>ESC</kbd> BACK</span></p>
+      <div id="arena-parking" hidden><div id="arena-host" aria-label="Inkblast game arena"></div></div>
     </section>
     <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip">${playerScoreMarkup(1)}<div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div>${playerScoreMarkup(2)}</div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="joystick" data-joystick role="group" aria-label="Movement joystick" aria-describedby="joystick-help"><span class="joystick-base" aria-hidden="true"></span><span class="joystick-stick" aria-hidden="true"></span><span class="joystick-label" aria-hidden="true">MOVE</span></div><span id="joystick-help" class="sr-only">Touch anywhere on the pad, then slide to move. Release to stop steering. Keyboard controls also work.</span><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
     <section id="workshop" hidden></section>
   </main>
-  <footer id="home-footer"><span>CRAFTED FOR GOOD OLD-FASHIONED RIVALRY.</span><span>Everything stays on this device. <button id="about-button" class="text-button">About this edition</button></span></footer>
-  <dialog id="setup-dialog" class="panel-dialog"><form id="setup-form"><div class="dialog-heading"><div><p class="eyebrow">MAKE IT YOUR MATCH</p><h2>THE FINE PRINT.</h2></div><button type="button" class="close-button" data-close aria-label="Close setup">×</button></div><div class="settings-grid">
-    <label>Opponent<select name="mode"><option value="cpu">Player vs Computer</option><option value="local">Two Players</option></select></label>
-    <label>Computer difficulty<select name="difficulty"><option value="easy">Easy · room to learn</option><option value="normal">Normal · a fair fight</option><option value="hard">Hard · watch your step</option></select></label>
-    <label>Arena theme<select name="themeId"></select></label><label>Map layout<select name="schemeId"></select></label>
-    <label>First to<select name="targetScore"><option value="1">1 point · quick duel</option><option value="3">3 points</option><option value="5">5 points</option><option value="7">7 points</option><option value="10">10 points</option></select></label>
-    <label>Round clock<select name="roundSeconds"><option value="60">1 minute</option><option value="90">1½ minutes</option><option value="120">2 minutes</option><option value="150">2½ minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="0">Unlimited</option></select></label>
-    <label>Controllers<select id="input-assignment"><option value="keyboard">Shared keyboard</option><option value="mixed">Keyboard + gamepad</option><option value="gamepads">Two gamepads</option></select></label>
-    <label id="solo-keyboard-field">Solo keyboard<select id="solo-keyboard"><option value="wasd">WASD</option><option value="arrows">Arrow keys</option><option value="custom" disabled>Custom keys</option></select></label>
-  </div><p class="field-note" id="controller-status">Keyboard ready.</p><label class="check mystery-option"><input type="checkbox" name="mysteryPickups" aria-describedby="mystery-description">Mystery pickups</label><p id="mystery-description" class="field-note">Every pickup looks the same: 75% helpful, 25% trouble. Bad effects last 7 seconds, one at a time. Turn off to reveal each item before collecting.</p><p id="theme-description" class="field-note"></p>
-  <details><summary>Advanced battle rules</summary><div class="settings-grid">
-    <label>Score by<select name="scoring"><option value="wins">Round wins</option><option value="kills">Opponent eliminations</option></select></label>
-    <label>Closing walls<select name="enclosureDepth"><option value="0">Off</option><option value="1">One ring</option><option value="2">Two rings</option><option value="3">Three rings</option><option value="4">Four rings</option><option value="5">To the center</option></select></label>
-    <label>Conveyor speed<select name="conveyorSpeed"><option value="0.5">Slow</option><option value="1">Normal</option><option value="2">Fast</option></select></label>
-    <label class="check"><input type="checkbox" name="randomStarts">Swap starting corners</label><label class="check"><input type="checkbox" name="winnerBonus">Winner roulette bonus</label><label class="check"><input type="checkbox" name="destroyDiseases">Flames destroy disease pickups</label><label class="check"><input type="checkbox" name="stompBombs">Landing bombs detonate on contact</label><label class="check"><input type="checkbox" name="wally">Wally throwing loadout</label>
-  </div><p class="field-note">Starting items and pickup selection are editable in Map Workshop. Mystery mode uses the map’s helpful items and its own penalty mix; all mystery pickups burn in flames. Browser rule choices are detailed in About this edition.</p></details>
-  <details><summary>Sound, motion & keyboard</summary><div class="settings-grid"><label>Music<input name="music" type="range" min="0" max="1" step="0.01"></label><label>Sound effects<input name="effects" type="range" min="0" max="1" step="0.01"></label><label>Character sounds<input name="voices" type="range" min="0" max="1" step="0.01"></label><label class="check"><input type="checkbox" name="reducedMotion">Reduce motion & particles</label></div><div id="key-bindings"></div><p class="field-note">Select a key, then press its replacement. Gamepad: stick / D-pad to move, A to plant, B for action, Start to pause.</p></details>
-  <div class="dialog-footer"><button type="button" data-close>BACK</button><button class="primary" type="submit">START MATCH ↗</button></div><p id="setup-error" role="alert"></p></form></dialog>
+  <dialog id="setup-dialog" class="panel-dialog arcade-dialog" aria-label="Options"><form id="setup-form">
+    <h2 id="options-title">OPTIONS</h2>
+    <nav id="options-menu" class="arcade-list" aria-label="Options">
+      <button type="button" data-settings-link="match">MATCH SETTINGS</button>
+      <button type="button" data-settings-link="controls">CONTROLS &amp; KEYS</button>
+      <button type="button" data-settings-link="audio">SOUND &amp; DISPLAY</button>
+      <button type="button" data-settings-link="rules">ADVANCED RULES</button>
+      <button type="button" data-options-close>BACK</button>
+    </nav>
+<section data-settings-page="match" hidden><h2>MATCH SETTINGS</h2><div class="settings-grid"><label>Opponent<select name="mode"><option value="cpu">Computer</option><option value="local">Two Players</option></select></label>
+      <label>Computer difficulty<select name="difficulty"><option value="easy">Easy</option><option value="normal">Normal</option><option value="hard">Hard</option></select></label>
+      <label>Arena theme<select name="themeId"></select></label>
+      <label>Map layout<select name="schemeId"></select></label>
+      <label>First to<select name="targetScore"><option value="1">1 point · quick duel</option><option value="3">3 points</option><option value="5">5 points</option><option value="7">7 points</option><option value="10">10 points</option></select></label>
+      <label>Round clock<select name="roundSeconds"><option value="60">1 minute</option><option value="90">1½ minutes</option><option value="120">2 minutes</option><option value="150">2½ minutes</option><option value="180">3 minutes</option><option value="240">4 minutes</option><option value="300">5 minutes</option><option value="600">10 minutes</option><option value="0">Unlimited</option></select></label>
+      <label class="check mystery-option"><input type="checkbox" name="mysteryPickups" aria-describedby="mystery-description">Mystery pickups</label></div><p id="theme-description" class="field-note"></p><p id="mystery-description" class="field-note">Mystery pickups: 75% helpful, 25% trouble. Bad effects last 7 seconds.</p></section>
+    <section data-settings-page="controls" hidden><h2>CONTROLS &amp; KEYS</h2><div class="settings-grid"><label>Controllers<select id="input-assignment"><option value="keyboard">Shared keyboard</option><option value="mixed">Keyboard + gamepad</option><option value="gamepads">Two gamepads</option></select></label>
+      <label id="solo-keyboard-field">Solo keyboard<select id="solo-keyboard"><option value="wasd">WASD</option><option value="arrows">Arrow keys</option><option value="custom" disabled>Custom keys</option></select></label></div><p id="controller-status" class="field-note">Keyboard ready.</p><div id="key-bindings"></div><p class="field-note">Select a key and press its replacement. Escape cancels.</p></section>
+    <section data-settings-page="audio" hidden><h2>SOUND &amp; DISPLAY</h2><div class="settings-grid"><label>Music<input name="music" type="range" min="0" max="1" step="0.01"></label>
+      <label>Sound effects<input name="effects" type="range" min="0" max="1" step="0.01"></label>
+      <label>Character sounds<input name="voices" type="range" min="0" max="1" step="0.01"></label>
+      <label class="check"><input type="checkbox" name="reducedMotion">Reduce motion & particles</label></div><div class="arcade-list"><button id="menu-sound" type="button">MUTE SOUND</button><button id="menu-fullscreen" type="button">FULLSCREEN</button></div></section>
+    <section data-settings-page="rules" hidden><h2>ADVANCED RULES</h2><div class="settings-grid"><label>Score by<select name="scoring"><option value="wins">Round wins</option><option value="kills">Opponent eliminations</option></select></label>
+      <label>Closing walls<select name="enclosureDepth"><option value="0">Off</option><option value="1">One ring</option><option value="2">Two rings</option><option value="3">Three rings</option><option value="4">Four rings</option><option value="5">To the center</option></select></label>
+      <label>Conveyor speed<select name="conveyorSpeed"><option value="0.5">Slow</option><option value="1">Normal</option><option value="2">Fast</option></select></label>
+      <label class="check"><input type="checkbox" name="randomStarts">Swap starting corners</label>
+      <label class="check"><input type="checkbox" name="winnerBonus">Winner roulette bonus</label>
+      <label class="check"><input type="checkbox" name="destroyDiseases">Flames destroy disease pickups</label>
+      <label class="check"><input type="checkbox" name="stompBombs">Landing bombs detonate on contact</label>
+      <label class="check"><input type="checkbox" name="wally">Wally throwing loadout</label></div><p class="field-note">Starting items and pickup selection are editable in Map Workshop.</p></section>
+    <div id="settings-actions" class="arcade-list" hidden><button type="button" id="options-back">BACK</button><button type="submit">START MATCH</button></div>
+    <p class="menu-keys"><span><kbd>↑</kbd><kbd>↓</kbd> SELECT</span><span><kbd>ENTER</kbd> CHANGE</span><span><kbd>ESC</kbd> BACK</span></p>
+    <p class="field-note">Changes save automatically.</p><p id="setup-error" role="alert"></p>
+  </form></dialog>
   <dialog id="rotate-dialog" class="panel-dialog compact rotate-dialog" aria-labelledby="rotate-title" aria-describedby="rotate-help"><span class="rotate-device" aria-hidden="true"></span><h2 id="rotate-title">TURN UP THE CHAOS.</h2><p id="rotate-help">Rotate your device to landscape to play.<br>Your game is on hold.</p><button id="rotate-leave" class="text-button">Back to main menu</button></dialog>
   <dialog id="pause-dialog" class="panel-dialog compact"><p class="eyebrow">TAKE A BREATHER</p><h2>FUSE ON HOLD.</h2><p id="pause-reason">Your arena will be right here.</p><button id="resume-button" class="primary">BACK TO THE BLAST</button><button id="restart-button">RESTART MATCH</button><button id="export-replay" class="text-button">Save a replay record</button><button id="leave-button" class="text-button">Leave for main menu</button></dialog>
   <dialog id="result-dialog" class="panel-dialog result-dialog"><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div id="winner-mark" class="winner-mark">1</div><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-score"><span id="result-p1">0</span><small>—</small><span id="result-p2">0</span></div><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-setup">CHANGE THE SETUP</button><button id="result-home" class="text-button">Main menu</button></dialog>
@@ -194,21 +230,6 @@ function currentScheme(): Scheme {
 function currentTheme() {
   return THEMES.find((theme) => theme.id === settings.themeId) ?? THEMES[0];
 }
-function updatePreview(): void {
-  if (!renderer || screen !== "home") return;
-  state = createGame(currentScheme(), currentTheme(), settings, 49271);
-  state.phase = "active";
-  state.countdown = 0;
-  state.pickups = [
-    { x: 3, y: 1, type: "flame" },
-    { x: 11, y: 9, type: "kick" },
-  ].filter(
-    (item) => state.cells[item.y * 15 + item.x] === "floor",
-  ) as GameState["pickups"];
-  renderer.render(state);
-  el("preview-theme").textContent =
-    `${currentTheme().name.toUpperCase()} / ${currentScheme().name.toUpperCase()}`;
-}
 function renderScores(): void {
   ([0, 1] as const).forEach((id) => {
     el(`p${id + 1}-score`).innerHTML =
@@ -273,7 +294,6 @@ function startRound(): void {
   home.hidden = true;
   battle.hidden = false;
   el("workshop").hidden = true;
-  el("home-footer").hidden = true;
   el("battle-arena-slot").append(host);
   screen = "battle";
   controls.enabled = true;
@@ -302,6 +322,7 @@ function startRound(): void {
   );
   sound.start(state.theme.music, state.hurry);
   document.body.classList.add("in-battle");
+  document.body.dataset.screen = "battle";
   el("pause-button").focus();
   (touchScreen.matches ? el("pause-dialog") : battle).append(
     el("practice-tools"),
@@ -320,7 +341,7 @@ async function startMatch(kind: typeof mode = "battle"): Promise<void> {
     return;
   }
   if (kind !== "practice" && controllerError()) {
-    showSetup();
+    showSetup("controls");
     el("setup-error").textContent = controllerError();
     return;
   }
@@ -344,19 +365,16 @@ function goHome(): void {
   home.hidden = false;
   battle.hidden = true;
   el("workshop").hidden = true;
-  el("home-footer").hidden = false;
-  document
-    .querySelector(".preview-panel")!
-    .insertBefore(host, document.querySelector(".preview-caption"));
+  el("arena-parking").append(host);
   el("pause-button").hidden = true;
   document.querySelector<HTMLElement>(".match-clock")!.hidden = true;
   document.querySelector<HTMLElement>(".edition")!.hidden = false;
   el("resume-tour").hidden = !loadTour();
   document.body.classList.remove("in-battle");
+  document.body.dataset.screen = "home";
+  showHomeMenu("main-menu", "quick-play");
   editor?.destroy();
   editor = null;
-  updatePreview();
-  el("quick-play").focus();
 }
 function pause(reason: string): void {
   if (screen !== "battle" || state.phase === "finished" || paused) return;
@@ -583,7 +601,7 @@ function frame(time: number): void {
     }
     updateHud();
     renderer.render(state, accumulator / (1000 / TICK_RATE));
-  } else if (renderer && state && screen === "home") renderer.render(state);
+  }
   requestAnimationFrame(frame);
 }
 
@@ -603,6 +621,20 @@ function syncSetup(): void {
   updateThemeDescription();
   syncPickupRule();
   renderBindings();
+  updateSettingValues();
+}
+function updateSettingValues(): void {
+  document.body.classList.toggle("reduced-motion", settings.reducedMotion);
+  setupForm
+    .querySelectorAll<HTMLInputElement>('input[type="range"]')
+    .forEach((input) => {
+      let output = input.parentElement!.querySelector("output");
+      if (!output) {
+        output = document.createElement("output");
+        input.before(output);
+      }
+      output.textContent = `${Math.round(Number(input.value) * 100)}%`;
+    });
 }
 function syncPickupRule(): void {
   const mystery = setupForm.elements.namedItem(
@@ -643,6 +675,7 @@ function readSetup(): void {
   sound.configure(
     muted ? { ...settings, music: 0, effects: 0, voices: 0 } : settings,
   );
+  updateSettingValues();
   persist();
   try {
     localStorage.setItem("inkblast.input-assignment.v1", controls.assignment);
@@ -698,6 +731,9 @@ function renderBindings(): void {
           controls.soloBinding[action as keyof typeof preset] === code,
       ),
     )?.[0] ?? "custom";
+  const focusedBinding = el("key-bindings").contains(document.activeElement)
+    ? (document.activeElement as HTMLElement).dataset.binding
+    : undefined;
   const container = el("key-bindings");
   container.replaceChildren();
   controls.activeBindings.forEach((binding, player) => {
@@ -709,13 +745,14 @@ function renderBindings(): void {
     for (const [action, key] of Object.entries(binding)) {
       const button = document.createElement("button");
       button.type = "button";
+      button.dataset.binding = `${player}-${action}`;
       button.textContent = `${action}: ${keyLabel(key)}`;
       button.onclick = () => {
         cancelBinding();
         button.textContent = "Press a key…";
         const handler = (event: KeyboardEvent) => {
           event.preventDefault();
-          event.stopPropagation();
+          event.stopImmediatePropagation();
           if (
             event.code !== "Escape" &&
             ![
@@ -747,6 +784,10 @@ function renderBindings(): void {
     }
     container.append(row);
   });
+  if (focusedBinding)
+    container
+      .querySelector<HTMLElement>(`[data-binding="${focusedBinding}"]`)
+      ?.focus();
 }
 function fillOptions(): void {
   const themeSelect = setupForm.elements.namedItem(
@@ -774,12 +815,47 @@ function fillOptions(): void {
     ),
   );
 }
-function showSetup(): void {
+let settingsPage: string | null = null;
+function showSettingsPage(page: string | null): void {
+  settingsPage = page;
+  el("options-menu").hidden = page !== null;
+  el("options-title").hidden = page !== null;
+  el("settings-actions").hidden = page === null;
+  document
+    .querySelectorAll<HTMLElement>("[data-settings-page]")
+    .forEach((section) => {
+      section.hidden = section.dataset.settingsPage !== page;
+    });
+  const scope = page
+    ? document.querySelector<HTMLElement>(`[data-settings-page="${page}"]`)!
+    : el("options-menu");
+  scope.querySelector<HTMLElement>("button, select, input")?.focus();
+}
+function showSetup(page: string | null = null): void {
   fillOptions();
   syncSetup();
   el("setup-error").textContent = "";
   openDialog("setup-dialog");
+  showSettingsPage(page);
 }
+document
+  .querySelectorAll<HTMLElement>("[data-settings-link]")
+  .forEach((button) => {
+    button.onclick = () => showSettingsPage(button.dataset.settingsLink!);
+  });
+function backToOptions(): void {
+  const previous = settingsPage;
+  cancelBinding();
+  showSettingsPage(null);
+  document
+    .querySelector<HTMLElement>(`[data-settings-link="${previous}"]`)
+    ?.focus();
+}
+el("options-back").onclick = backToOptions;
+document.querySelector<HTMLElement>("[data-options-close]")!.onclick = () =>
+  el<HTMLDialogElement>("setup-dialog").close();
+el("menu-sound").onclick = () => el("sound-toggle").click();
+el("menu-fullscreen").onclick = () => el("fullscreen").click();
 el<HTMLDialogElement>("setup-dialog").addEventListener("close", () =>
   cancelBinding(),
 );
@@ -806,15 +882,44 @@ document.querySelector<HTMLAnchorElement>(".wordmark")!.onclick = (event) => {
     pause("Match paused. Choose Leave for main menu to exit.");
   else goHome();
 };
-el("quick-play").onclick = () => {
-  settings.mode = document.querySelector<HTMLInputElement>(
-    'input[name="mode"]:checked',
-  )!.value as "cpu" | "local";
+function quickPlay(opponent: MatchSettings["mode"]): void {
+  settings.mode = opponent;
   customScheme = null;
   persist();
   void startMatch();
+}
+el("quick-play").onclick = () => quickPlay("cpu");
+el("local-play").onclick = () => quickPlay("local");
+el("custom-button").onclick = () => showSetup();
+function showHomeMenu(id: string, focusId?: string): void {
+  for (const menu of home.querySelectorAll<HTMLElement>("nav"))
+    menu.hidden = menu.id !== id;
+  const menu = el(id);
+  (focusId
+    ? el(focusId)
+    : menu.querySelector<HTMLElement>("button:not([hidden])")
+  )?.focus();
+  el("menu-hint").textContent =
+    (document.activeElement as HTMLElement)?.dataset.hint ?? "";
+}
+el("extras-button").onclick = () => showHomeMenu("extras-menu");
+el("tour-menu").onclick = () => {
+  if (loadTour()) showHomeMenu("tour-menu-list");
+  else el("tour-button").click();
 };
-el("custom-button").onclick = showSetup;
+home.querySelectorAll<HTMLElement>("[data-menu-back]").forEach((button) => {
+  button.onclick = () =>
+    showHomeMenu(
+      "main-menu",
+      button.closest("nav")?.id === "extras-menu"
+        ? "extras-button"
+        : "tour-menu",
+    );
+});
+home.addEventListener("focusin", (event) => {
+  el("menu-hint").textContent =
+    (event.target as HTMLElement).dataset.hint ?? "";
+});
 el("practice-button").onclick = () => void startMatch("practice");
 el("guide-practice").onclick = () => void startMatch("practice");
 el("resume-tour").onclick = () => {
@@ -822,7 +927,7 @@ el("resume-tour").onclick = () => {
   if (!checkpoint) return;
   settings = checkpoint.settings;
   if (controllerError()) {
-    showSetup();
+    showSetup("controls");
     el("setup-error").textContent = controllerError();
     return;
   }
@@ -853,9 +958,8 @@ el("practice-reset").onclick = () => {
   previousHud = "";
 };
 el("tour-button").onclick = () => {
-  settings.mode = document.querySelector<HTMLInputElement>(
-    'input[name="mode"]:checked',
-  )!.value as "cpu" | "local";
+  settings.mode = "cpu";
+  persist();
   void startMatch("tour");
 };
 el("help-button").onclick = () => openDialog("help-dialog");
@@ -886,7 +990,6 @@ el<HTMLInputElement>("backup-file").onchange = async (event) => {
     settings = await loadSettings();
     maps = await loadMaps();
     progress = await loadProgress();
-    updatePreview();
     toast(storageWarning || `Restored settings, records and ${count} maps.`);
   } catch (error) {
     toast(
@@ -939,6 +1042,7 @@ el("sound-toggle").onclick = () => {
   sound.configure(
     muted ? { ...settings, music: 0, effects: 0, voices: 0 } : settings,
   );
+  el("menu-sound").textContent = muted ? "UNMUTE SOUND" : "MUTE SOUND";
   el("sound-toggle").textContent = muted ? "♫̸" : "♪";
   el("sound-toggle").setAttribute(
     "aria-label",
@@ -957,9 +1061,9 @@ el("fullscreen").onclick = () => {
 };
 el("workshop-button").onclick = () => {
   screen = "workshop";
+  document.body.dataset.screen = "workshop";
   home.hidden = true;
   el("workshop").hidden = false;
-  el("home-footer").hidden = true;
   editor = new MapEditor(el("workshop"), {
     onPlay: (scheme) => {
       customScheme = scheme;
@@ -978,7 +1082,6 @@ setupForm.onchange = () => {
   updateThemeDescription();
   readSetup();
   renderBindings();
-  updatePreview();
 };
 setupForm.onsubmit = (event) => {
   event.preventDefault();
@@ -1059,15 +1162,13 @@ async function boot(): Promise<void> {
     } catch {
       /* Existing player-one preferences also work in solo play. */
     }
-    document.querySelector<HTMLInputElement>(
-      `input[name="mode"][value="${settings.mode}"]`,
-    )!.checked = true;
     try {
       const assignment = localStorage.getItem("inkblast.input-assignment.v1");
       if (assignment && ["keyboard", "mixed", "gamepads"].includes(assignment))
         controls.assignment = assignment as InputAssignment;
       muted = localStorage.getItem("inkblast.muted.v1") === "true";
     } catch {}
+    el("menu-sound").textContent = muted ? "UNMUTE SOUND" : "MUTE SOUND";
     el("sound-toggle").textContent = muted ? "♫̸" : "♪";
     el("sound-toggle").setAttribute(
       "aria-label",
@@ -1085,7 +1186,14 @@ async function boot(): Promise<void> {
     sound.configure(
       muted ? { ...settings, music: 0, effects: 0, voices: 0 } : settings,
     );
-    updatePreview();
+    updateSettingValues();
+    el<HTMLButtonElement>("quick-play").disabled = false;
+    el<HTMLButtonElement>("local-play").disabled = false;
+    if (
+      !document.querySelector("dialog[open]") &&
+      document.activeElement === document.body
+    )
+      el("quick-play").focus();
     requestAnimationFrame(frame);
   } catch (error) {
     host.innerHTML =
@@ -1094,6 +1202,28 @@ async function boot(): Promise<void> {
     toast("The arena could not start. Please reload.");
   }
 }
+document.body.dataset.screen = "home";
+el<HTMLButtonElement>("quick-play").disabled = true;
+el<HTMLButtonElement>("local-play").disabled = true;
+installMenuNavigation(
+  () =>
+    document.querySelector<HTMLElement>("dialog[open]") ??
+    (screen === "home"
+      ? home.querySelector<HTMLElement>("nav:not([hidden])")
+      : null),
+  () => {
+    const dialog = document.querySelector<HTMLDialogElement>("dialog[open]");
+    if (dialog?.id === "setup-dialog" && settingsPage) backToOptions();
+    else if (dialog?.id === "pause-dialog") resume();
+    else if (dialog?.id === "result-dialog") goHome();
+    else if (dialog?.id === "rotate-dialog") return;
+    else if (dialog) dialog.close();
+    else if (screen === "home" && el("main-menu").hidden) {
+      const opener = el("extras-menu").hidden ? "tour-menu" : "extras-button";
+      showHomeMenu("main-menu", opener);
+    }
+  },
+);
 void boot();
 
 if (import.meta.env.DEV || import.meta.env.MODE === "qa") {

@@ -1,3 +1,4 @@
+import { openSettings, openExtra } from "./menu-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
@@ -12,14 +13,14 @@ test("backup preserves newer session values and deletions when existing device r
   page,
 }) => {
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#workshop-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openExtra(page, "workshop-button");
   await page.getByLabel("Map name", { exact: true }).fill("Old persisted map");
   await page.getByLabel("Map name", { exact: true }).blur();
   await page.getByRole("button", { name: "Save map", exact: true }).click();
   await expect(page.locator(".editor-status")).toContainText("Saved");
   await page.getByRole("button", { name: "← Back", exact: true }).click();
-  await page.locator("#about-button").click();
+  await openExtra(page, "about-button");
   const baseline = await exportDeviceBackup(page);
   baseline.settings.difficulty = "normal";
   baseline.progress.played = 2;
@@ -55,7 +56,7 @@ test("backup preserves newer session values and deletions when existing device r
   expect(backup.progress.played).toBe(7);
   expect(backup.maps[0].name).toBe("New session map");
   await page.getByRole("button", { name: "Close about", exact: true }).click();
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   const maps = page.getByLabel("Load a preset or saved map");
   await maps.selectOption(updated.maps[0].id);
   await expect(page.getByLabel("Map name", { exact: true })).toHaveValue(
@@ -71,7 +72,7 @@ test("backup preserves newer session values and deletions when existing device r
     maps.locator("option", { hasText: "New session map" }),
   ).toHaveCount(0);
   await page.getByRole("button", { name: "← Back", exact: true }).click();
-  await page.locator("#about-button").click();
+  await openExtra(page, "about-button");
   expect((await exportDeviceBackup(page)).maps).toEqual([]);
 });
 
@@ -87,12 +88,12 @@ test("settings quota failure is visible while the chosen difficulty stays usable
     };
   });
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#custom-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openSettings(page);
   await page
     .locator("#setup-form select[name=difficulty]")
     .selectOption("hard");
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await expect(page.locator("#toast")).toContainText("session only");
   await expect(page.locator("#p2-name")).toContainText("HARD");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
@@ -110,8 +111,8 @@ test("a full device store preserves the map for this session and JSON export", a
     };
   });
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#workshop-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openExtra(page, "workshop-button");
   await page
     .getByLabel("Map name", { exact: true })
     .fill("Keep my unsaved map");
@@ -125,7 +126,7 @@ test("a full device store preserves the map for this session and JSON export", a
   expect(saved.scheme.name).toBe("Keep my unsaved map");
   expect(saved.scheme.cells).toHaveLength(165);
   await page.getByRole("button", { name: "← Back", exact: true }).click();
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   await expect(
     page
       .getByLabel("Load a preset or saved map")
@@ -139,10 +140,10 @@ test("WebGL loss pauses the battle and restoration allows a complete round", asy
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#custom-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openSettings(page);
   await page.locator("#setup-form select[name=mode]").selectOption("local");
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   await page.evaluate(() => {
     const canvas =

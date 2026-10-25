@@ -1,14 +1,15 @@
+import { openSettings, openExtra } from "./menu-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
 async function ready(page: Page): Promise<void> {
   await page.goto("./");
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
+  await expect(page.locator("#quick-play")).toBeEnabled();
 }
 
 async function startLocal(page: Page, assignment = "keyboard"): Promise<void> {
   await ready(page);
-  await page.locator("#custom-button").click();
+  await openSettings(page);
   await page.locator("#setup-form select[name=mode]").selectOption("local");
   await page.locator("#setup-form select[name=targetScore]").selectOption("1");
   await page
@@ -17,8 +18,9 @@ async function startLocal(page: Page, assignment = "keyboard"): Promise<void> {
   await page
     .locator("#setup-form select[name=themeId]")
     .selectOption("classic");
+  await openSettings(page, "controls");
   await page.locator("#input-assignment").selectOption(assignment);
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await expect(page.locator("#battle")).toBeVisible();
   await expect(page.locator("#p2-name")).toHaveText("PLAYER TWO");
 }
@@ -32,11 +34,11 @@ test("built project path loads local assets without runtime services", async ({
   page.on("request", (request) => requests.push(request.url()));
   await ready(page);
   await expect(
-    page.getByRole("heading", { name: /SMALL ARENA/ }),
+    page.getByRole("heading", { name: "INKBLAST", exact: true }),
   ).toBeVisible();
-  await expect(page.locator("#home input[name=mode]")).toHaveCount(2);
+  await expect(page.locator("#main-menu button")).toHaveCount(5);
   await page.reload();
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
+  await expect(page.locator("#quick-play")).toBeEnabled();
   expect(errors).toEqual([]);
   expect(
     requests
@@ -78,21 +80,23 @@ test("solo keyboard choice persists, reaches gameplay and leaves local bindings 
   page,
 }) => {
   await ready(page);
-  await page.locator("#custom-button").click();
+  await openSettings(page);
+  await openSettings(page, "controls");
   const keyboard = page.getByRole("combobox", {
     name: "Solo keyboard",
     exact: true,
   });
   await expect(keyboard).toHaveValue("wasd");
   await keyboard.selectOption("arrows");
-  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await openSettings(page, "controls");
   await expect(page.locator("#key-bindings .binding-row")).toHaveCount(1);
   await expect(page.locator("#key-bindings")).toContainText("up: Up");
   await page.reload();
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#custom-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openSettings(page);
+  await openSettings(page, "controls");
   await expect(keyboard).toHaveValue("arrows");
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await expect(page.locator("#controls-hint")).toContainText("UpLeftDownRight");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   await page.keyboard.down("ArrowRight");
@@ -110,17 +114,17 @@ test("solo keyboard choice persists, reaches gameplay and leaves local bindings 
   expect(replay.inputs.some((input: number[]) => input[1] === 1)).toBe(true);
   expect(replay.inputs.some((input: number[]) => input[2] === 1)).toBe(true);
   await page.locator("#leave-button").click();
-  await page.locator("#practice-button").click();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#controls-hint")).toContainText("UpLeftDownRight");
   await expect(page.locator("#practice-tip")).toContainText(
     "Use Up / Left / Down / Right",
   );
   await page.keyboard.press("Escape");
   await page.locator("#leave-button").click();
-  await page.locator("#custom-button").click();
+  await openSettings(page);
   await page.locator("#setup-form select[name=mode]").selectOption("local");
   await expect(keyboard).toBeHidden();
-  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await openSettings(page, "controls");
   await expect(page.locator("#key-bindings .binding-row")).toHaveCount(2);
   await expect(page.locator("#key-bindings .binding-row").nth(0)).toContainText(
     "up: W",
@@ -128,10 +132,12 @@ test("solo keyboard choice persists, reaches gameplay and leaves local bindings 
   await expect(page.locator("#key-bindings .binding-row").nth(1)).toContainText(
     "up: Up",
   );
+  await openSettings(page);
   await page.locator("#setup-form select[name=mode]").selectOption("cpu");
+  await openSettings(page, "controls");
   await expect(keyboard).toHaveValue("arrows");
   await keyboard.selectOption("wasd");
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await expect(page.locator("#controls-hint")).toContainText("WASD");
 });
 
@@ -139,8 +145,8 @@ test("solo custom keys survive reload and accept keys used by local player two",
   page,
 }) => {
   await ready(page);
-  await page.locator("#custom-button").click();
-  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
+  await openSettings(page);
+  await openSettings(page, "controls");
   await page.getByRole("button", { name: "up: W", exact: true }).click();
   await page.keyboard.press("ArrowUp");
   await expect(
@@ -150,12 +156,12 @@ test("solo custom keys survive reload and accept keys used by local player two",
     page.getByRole("combobox", { name: "Solo keyboard", exact: true }),
   ).toHaveValue("custom");
   await page.reload();
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
-  await page.locator("#custom-button").click();
+  await expect(page.locator("#quick-play")).toBeEnabled();
+  await openSettings(page);
+  await openSettings(page, "controls");
   await expect(
     page.getByRole("combobox", { name: "Solo keyboard", exact: true }),
   ).toHaveValue("custom");
-  await page.getByText("Sound, motion & keyboard", { exact: true }).click();
   await expect(
     page.getByRole("button", { name: "up: Up", exact: true }),
   ).toBeVisible();
@@ -185,13 +191,13 @@ test("device backup exports and restores settings and local records", async ({
   page,
 }) => {
   await ready(page);
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   await page.getByLabel("Map name", { exact: true }).fill("Backup map");
   await page.getByLabel("Map name", { exact: true }).blur();
   await page.getByRole("button", { name: "Save map", exact: true }).click();
   await expect(page.locator(".editor-status")).toContainText("Saved");
   await page.getByRole("button", { name: "← Back", exact: true }).click();
-  await page.locator("#about-button").click();
+  await openExtra(page, "about-button");
   const downloaded = page.waitForEvent("download");
   await page.locator("#export-backup").click();
   const download = await downloaded;
@@ -215,7 +221,7 @@ test("device backup exports and restores settings and local records", async ({
   });
   await expect(page.locator("#toast")).toContainText("Restored settings");
   await page.getByRole("button", { name: "Close about", exact: true }).click();
-  await page.locator("#about-button").click();
+  await openExtra(page, "about-button");
   await expect(page.locator("#local-record")).toContainText(
     "7 rounds played · 3 wins",
   );
@@ -227,7 +233,7 @@ test("device backup exports and restores settings and local records", async ({
           .music,
     ),
   ).toBe(0.17);
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   await expect(
     page
       .getByLabel("Load a preset or saved map")
@@ -293,7 +299,7 @@ test("workshop edits tiles, undoes, saves in IndexedDB and imports an inert map 
   page,
 }) => {
   await ready(page);
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   await page
     .getByLabel("Map name", { exact: true })
     .fill("Browser workshop test");
@@ -319,7 +325,7 @@ test("workshop edits tiles, undoes, saves in IndexedDB and imports an inert map 
   await page.getByRole("button", { name: "Save map", exact: true }).click();
   await expect(page.locator(".editor-status")).toContainText("Saved");
   await page.reload();
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   const saved = page.getByLabel("Load a preset or saved map");
   await expect(
     saved.locator("option", { hasText: "Browser workshop test" }),
@@ -407,7 +413,7 @@ test("workshop edits tiles, undoes, saves in IndexedDB and imports an inert map 
     .click();
   await expect(page.locator(".editor-status")).toContainText("deleted");
   await page.reload();
-  await page.locator("#workshop-button").click();
+  await openExtra(page, "workshop-button");
   await expect(
     page
       .getByLabel("Load a preset or saved map")
@@ -419,21 +425,21 @@ test("mystery pickups default on, persist opt-out, and can be re-enabled", async
   page,
 }) => {
   await ready(page);
-  await page.locator("#custom-button").click();
+  await openSettings(page);
   const mystery = page.getByRole("checkbox", {
     name: "Mystery pickups",
     exact: true,
   });
   await expect(mystery).toBeChecked();
   await mystery.uncheck();
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await page.reload();
-  await page.locator("#custom-button").click();
+  await openSettings(page);
   await expect(mystery).not.toBeChecked();
   await mystery.check();
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await page.reload();
-  await page.locator("#custom-button").click();
+  await openSettings(page);
   await expect(mystery).toBeChecked();
 });
 
@@ -441,7 +447,7 @@ test("pickup reveals and penalty countdowns stay readable and freeze while pause
   page,
 }, testInfo) => {
   await ready(page);
-  await page.locator("#practice-button").click();
+  await openExtra(page, "practice-button");
   await expect(page.locator("#battle")).toHaveAttribute("data-phase", "active");
   await page.locator("#practice-item").selectOption("skate");
   await page.locator("#practice-give").click();

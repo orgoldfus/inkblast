@@ -18,14 +18,19 @@ try {
   const response = await page.goto(url);
   if (response?.status() !== 200)
     throw new Error(`Hosted page returned ${response?.status()}`);
-  await page.waitForSelector("#arena-host canvas");
+  await page.waitForFunction(
+    () => !document.querySelector("#quick-play").disabled,
+  );
   await page.screenshot({ path: "artifacts/live-home.png", fullPage: true });
   await page.reload();
-  await page.waitForSelector("#arena-host canvas");
+  await page.waitForFunction(
+    () => !document.querySelector("#quick-play").disabled,
+  );
   await page.locator("#custom-button").click();
+  await page.locator('[data-settings-link="match"]').click();
   await page.locator("#setup-form select[name=mode]").selectOption("local");
   await page.locator("#setup-form select[name=targetScore]").selectOption("1");
-  await page.getByRole("button", { name: "START MATCH ↗" }).click();
+  await page.getByRole("button", { name: "START MATCH" }).click();
   await page.locator("#battle").waitFor({ state: "visible" });
   await page.waitForSelector('#battle[data-phase="active"]');
   await page.keyboard.press("Space");

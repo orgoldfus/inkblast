@@ -151,8 +151,9 @@ try {
     }),
   );
   await page.goto(url);
-  await expect(page.locator("#arena-host canvas")).toBeVisible();
+  await expect(page.locator("#quick-play")).toBeEnabled();
   await page.locator("#custom-button").click();
+  await page.locator('[data-settings-link="match"]').click();
   const themes = await page
     .locator('#setup-form select[name="themeId"] option')
     .evaluateAll((options) =>
@@ -162,7 +163,8 @@ try {
     );
   expect(themes).toHaveLength(11);
   report.themes = themes;
-  await page.getByRole("button", { name: "Close setup", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
   const cdp = await context.newCDPSession(page);
   await sampleMemory(cdp, 0);
   for (let cycle = 1; cycle <= report.cycles; cycle++) {
@@ -171,13 +173,16 @@ try {
         throw new Error("Five-minute browser soak deadline exceeded.");
       const roundStarted = Date.now();
       await page.locator("#custom-button").click();
+      await page.locator('[data-settings-link="match"]').click();
       const form = page.locator("#setup-form");
       await form.locator('select[name="mode"]').selectOption("local");
       await form.locator('select[name="targetScore"]').selectOption("1");
       await form.locator('select[name="schemeId"]').selectOption("classic");
       await form.locator('select[name="themeId"]').selectOption(theme.id);
+      await page.locator("#options-back").click();
+      await page.locator('[data-settings-link="controls"]').click();
       await page.locator("#input-assignment").selectOption("keyboard");
-      await page.getByRole("button", { name: "START MATCH ↗" }).click();
+      await page.getByRole("button", { name: "START MATCH" }).click();
       await expect(page.locator("#battle")).toHaveAttribute(
         "data-phase",
         "active",

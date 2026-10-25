@@ -7,7 +7,9 @@ const errors = [];
 page.on("pageerror", (error) => errors.push(error.message));
 const url = process.env.INKBLAST_URL ?? "http://127.0.0.1:5173/";
 await page.goto(url);
-await page.waitForSelector("canvas");
+await page.waitForFunction(
+  () => !document.querySelector("#quick-play").disabled,
+);
 await page.screenshot({ path: "artifacts/home-desktop.png", fullPage: true });
 await page.locator("#quick-play").click();
 await page.waitForTimeout(2700);
@@ -36,11 +38,13 @@ await page.keyboard.press("Escape");
 if (await page.locator("#pause-dialog").isVisible())
   await page.locator("#leave-button").click();
 else await page.locator("#result-home").click();
+await page.locator("#extras-button").click();
 await page.locator("#practice-button").click();
 await page.waitForTimeout(4000);
 const practice = await page.evaluate(() => window.inkblastQA.snapshot());
 await page.keyboard.press("Escape");
 await page.locator("#leave-button").click();
+await page.locator("#extras-button").click();
 await page.locator("#workshop-button").click();
 await page.screenshot({
   path: "artifacts/workshop-desktop.png",
