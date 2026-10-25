@@ -6,7 +6,7 @@ export function joystickDirection(
   x: number,
   y: number,
   previous: Direction | null,
-  deadZone = 10,
+  deadZone = 5,
 ): Direction | null {
   if (Math.hypot(x, y) < deadZone) return null;
   const horizontal = x < 0 ? "left" : "right";
@@ -14,12 +14,12 @@ export function joystickDirection(
   // A small bias toward the current axis keeps diagonal thumb jitter from turning.
   if (
     (previous === "left" || previous === "right") &&
-    Math.abs(y) < Math.abs(x) * 1.25
+    Math.abs(y) < Math.abs(x) * 1.15
   )
     return horizontal;
   if (
     (previous === "up" || previous === "down") &&
-    Math.abs(x) < Math.abs(y) * 1.25
+    Math.abs(x) < Math.abs(y) * 1.15
   )
     return vertical;
   return Math.abs(x) >= Math.abs(y) ? horizontal : vertical;
@@ -35,6 +35,7 @@ export class TouchControls {
   private direction: Direction | null = null;
   private center = { x: 0, y: 0 };
   private radius = 0;
+  private restingCenter = { x: 0, y: 0 };
 
   constructor(host: HTMLElement, enabled: () => boolean) {
     this.joystick = host.querySelector<HTMLElement>("[data-joystick]")!;
@@ -66,10 +67,11 @@ export class TouchControls {
           if (this.pointer !== null) return;
           const bounds = target.getBoundingClientRect();
           this.pointer = event.pointerId;
-          this.center = {
+          this.restingCenter = {
             x: bounds.left + bounds.width / 2,
             y: bounds.top + bounds.height / 2,
           };
+          this.center = { x: event.clientX, y: event.clientY };
           this.radius = bounds.width / 4;
           target.classList.add("engaged");
           this.move(event);
@@ -123,18 +125,28 @@ export class TouchControls {
   }
 
   private move(event: PointerEvent): void {
-    const x = event.clientX - this.center.x;
-    const y = event.clientY - this.center.y;
-    const scale = Math.min(1, this.radius / (Math.hypot(x, y) || 1));
-    this.direction = joystickDirection(
-      x,
-      y,
-      this.direction,
-      this.radius * 0.28,
+    let x = event.clientX - this.center.x;
+    let y = event.clientY - this.center.y;
+    const distance = Math.hypot(x, y);
+    // Follow long drags so changing direction never requires returning to the pad.
+    if (distance > this.radius) {
+      this.center.x = event.clientX - (x / distance) * this.radius;
+      this.center.y = event.clientY - (y / distance) * this.radius;
+      x = event.clientX - this.center.x;
+      y = event.clientY - this.center.y;
+    }
+    this.joystick.style.setProperty(
+      "--origin-x",
+      `${this.center.x - this.restingCenter.x}px`,
     );
+    this.joystick.style.setProperty(
+      "--origin-y",
+      `${this.center.y - this.restingCenter.y}px`,
+    );
+    this.direction = joystickDirection(x, y, this.direction);
     this.joystick.dataset.direction = this.direction ?? "";
-    this.joystick.style.setProperty("--stick-x", `${x * scale}px`);
-    this.joystick.style.setProperty("--stick-y", `${y * scale}px`);
+    this.joystick.style.setProperty("--stick-x", `${x}px`);
+    this.joystick.style.setProperty("--stick-y", `${y}px`);
   }
 
   private release(pointer: number, cancelled = false): void {
@@ -145,6 +157,8 @@ export class TouchControls {
       target = this.joystick;
       target.classList.remove("engaged");
       target.dataset.direction = "";
+      target.style.removeProperty("--origin-x");
+      target.style.removeProperty("--origin-y");
       target.style.removeProperty("--stick-x");
       target.style.removeProperty("--stick-y");
     } else {

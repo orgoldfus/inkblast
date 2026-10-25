@@ -67,7 +67,7 @@ app.innerHTML = `
       <div class="preview-panel"><div class="panel-label"><span id="preview-theme">THE ORIGINAL INKBLAST ARENA</span><span>15 × 11 / TWO PLAYERS</span></div><div id="arena-host" aria-label="Inkblast game arena"></div><div class="preview-caption"><span class="caption-tag">A LITTLE CHAOS GOES A LONG WAY.</span><span class="caption-note">No downloads. No accounts. Just one more round.</span></div></div>
       <nav class="mode-links" aria-label="More ways to play"><button id="tour-button"><span class="mode-index">01 / THE ROAD TRIP</span><strong>ARCADE TOUR <span>↗</span></strong><small>Five arenas. One champion.</small></button><button id="workshop-button"><span class="mode-index">02 / MAKE SOME TROUBLE</span><strong>MAP WORKSHOP <span>↗</span></strong><small>Your blocks. Your rules.</small></button><button id="help-button"><span class="mode-index">03 / KNOW YOUR TOOLS</span><strong>FIELD GUIDE <span>↗</span></strong><small>Bombs, boots & bad ideas.</small></button></nav>
     </section>
-    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip">${playerScoreMarkup(1)}<div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div>${playerScoreMarkup(2)}</div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="joystick" data-joystick role="group" aria-label="Movement joystick" aria-describedby="joystick-help"><span class="joystick-base" aria-hidden="true"></span><span class="joystick-stick" aria-hidden="true"></span><span class="joystick-label" aria-hidden="true">MOVE</span></div><span id="joystick-help" class="sr-only">Drag the joystick to move. Release to stop steering. Keyboard controls also work.</span><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
+    <section id="battle" class="battle-screen" hidden><div id="battle-arena-slot"></div><div id="battle-announcement" class="battle-announcement" aria-live="polite"></div><div class="score-strip">${playerScoreMarkup(1)}<div class="duel-label"><span id="battle-theme">CLASSIC</span><b>VS</b><small id="battle-mode">FIRST TO 3</small></div>${playerScoreMarkup(2)}</div><div id="controls-hint" class="controls-hint"></div><div id="touch-controls" class="touch-controls"><div class="joystick" data-joystick role="group" aria-label="Movement joystick" aria-describedby="joystick-help"><span class="joystick-base" aria-hidden="true"></span><span class="joystick-stick" aria-hidden="true"></span><span class="joystick-label" aria-hidden="true">MOVE</span></div><span id="joystick-help" class="sr-only">Touch anywhere on the pad, then slide to move. Release to stop steering. Keyboard controls also work.</span><div class="touch-actions"><button data-control="action">ACTION</button><button data-control="bomb" class="bomb-button">BOMB</button></div></div><div id="practice-tip" class="practice-tip" hidden></div><div id="practice-tools" class="practice-tools" hidden><label>Try a power-up <select id="practice-item"><option value="mystery">Mystery pickup</option><option value="bomb">Extra Bomb</option><option value="flame">Flame</option><option value="goldflame">Goldflame</option><option value="skate">Skates</option><option value="kick">Kick</option><option value="punch">Punch</option><option value="grab">Grab</option><option value="spooge">Spooge</option><option value="trigger">Trigger</option><option value="jelly">Jelly</option><option value="disease">Disease</option><option value="superDisease">Super disease</option></select></label><button id="practice-give">GIVE ITEM</button><button id="practice-reset">RESET INVENTORY</button></div></section>
     <section id="workshop" hidden></section>
   </main>
   <footer id="home-footer"><span>CRAFTED FOR GOOD OLD-FASHIONED RIVALRY.</span><span>Everything stays on this device. <button id="about-button" class="text-button">About this edition</button></span></footer>
@@ -88,6 +88,7 @@ app.innerHTML = `
   </div><p class="field-note">Starting items and pickup selection are editable in Map Workshop. Mystery mode uses the map’s helpful items and its own penalty mix; all mystery pickups burn in flames. Browser rule choices are detailed in About this edition.</p></details>
   <details><summary>Sound, motion & keyboard</summary><div class="settings-grid"><label>Music<input name="music" type="range" min="0" max="1" step="0.01"></label><label>Sound effects<input name="effects" type="range" min="0" max="1" step="0.01"></label><label>Character sounds<input name="voices" type="range" min="0" max="1" step="0.01"></label><label class="check"><input type="checkbox" name="reducedMotion">Reduce motion & particles</label></div><div id="key-bindings"></div><p class="field-note">Select a key, then press its replacement. Gamepad: stick / D-pad to move, A to plant, B for action, Start to pause.</p></details>
   <div class="dialog-footer"><button type="button" data-close>BACK</button><button class="primary" type="submit">START MATCH ↗</button></div><p id="setup-error" role="alert"></p></form></dialog>
+  <dialog id="rotate-dialog" class="panel-dialog compact rotate-dialog" aria-labelledby="rotate-title" aria-describedby="rotate-help"><span class="rotate-device" aria-hidden="true"></span><h2 id="rotate-title">TURN UP THE CHAOS.</h2><p id="rotate-help">Rotate your device to landscape to play.<br>Your game is on hold.</p><button id="rotate-leave" class="text-button">Back to main menu</button></dialog>
   <dialog id="pause-dialog" class="panel-dialog compact"><p class="eyebrow">TAKE A BREATHER</p><h2>FUSE ON HOLD.</h2><p id="pause-reason">Your arena will be right here.</p><button id="resume-button" class="primary">BACK TO THE BLAST</button><button id="restart-button">RESTART MATCH</button><button id="export-replay" class="text-button">Save a replay record</button><button id="leave-button" class="text-button">Leave for main menu</button></dialog>
   <dialog id="result-dialog" class="panel-dialog result-dialog"><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div id="winner-mark" class="winner-mark">1</div><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-score"><span id="result-p1">0</span><small>—</small><span id="result-p2">0</span></div><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-setup">CHANGE THE SETUP</button><button id="result-home" class="text-button">Main menu</button></dialog>
   <dialog id="help-dialog" class="panel-dialog"><div class="dialog-heading"><div><p class="eyebrow">A SHORT COURSE IN CHAOS</p><h2>THE FIELD GUIDE.</h2></div><button data-close class="close-button" aria-label="Close guide">×</button></div><div class="guide-steps"><article><b>01</b><h3>MAKE AN EXIT.</h3><p>Bombs explode in a cross. Solid blocks stop fire; orange bricks break. Turn a corner before your fuse runs out.</p></article><article><b>02</b><h3>TAKE A CHANCE.</h3><p>Broken bricks reveal pickups. Mystery pickups are on by default: one icon, 75% helpful, 25% trouble. Watch your player’s strip for the reveal and a 7-second penalty countdown. Switch them off in match setup for visible items.</p></article><article><b>03</b><h3>THINK ONE BOMB AHEAD.</h3><p>Fire lights other bombs instantly. Trap a rival with a chain reaction—but leave yourself a way out.</p></article></div><div class="item-guide">
@@ -131,7 +132,28 @@ let replayStart: GameState | null = null;
 const directions = [null, "up", "down", "left", "right"];
 const controls = new Controls();
 const touchScreen = window.matchMedia("(pointer: coarse)");
+const portraitScreen = window.matchMedia("(orientation: portrait)");
 const sound = new Sound();
+function needsRotation(): boolean {
+  return touchScreen.matches && portraitScreen.matches;
+}
+function syncOrientation(): void {
+  const rotate = el<HTMLDialogElement>("rotate-dialog");
+  const blocked = screen === "battle" && needsRotation();
+  if (blocked) {
+    pause("Device rotated. Resume when you’re ready to play in landscape.");
+    if (!rotate.open) rotate.showModal();
+  } else if (rotate.open) {
+    rotate.close();
+  }
+}
+window.addEventListener("resize", syncOrientation);
+portraitScreen.addEventListener("change", syncOrientation);
+touchScreen.addEventListener("change", syncOrientation);
+el("rotate-dialog").addEventListener("cancel", (event) =>
+  event.preventDefault(),
+);
+el("rotate-leave").onclick = goHome;
 controls.onPause = () => {
   if (screen === "battle")
     paused ? resume() : pause("Your arena will be right here.");
@@ -281,6 +303,10 @@ function startRound(): void {
   sound.start(state.theme.music, state.hurry);
   document.body.classList.add("in-battle");
   el("pause-button").focus();
+  (touchScreen.matches ? el("pause-dialog") : battle).append(
+    el("practice-tools"),
+  );
+  syncOrientation();
 }
 async function startMatch(kind: typeof mode = "battle"): Promise<void> {
   if (!renderer) {
@@ -344,6 +370,10 @@ function pause(reason: string): void {
 }
 function resume(): void {
   if (screen !== "battle") return;
+  if (needsRotation()) {
+    syncOrientation();
+    return;
+  }
   if (!renderer.graphicsAvailable) {
     el("pause-reason").textContent =
       "The graphics connection is still recovering. Please wait for the arena to return.";
@@ -539,7 +569,7 @@ function frame(time: number): void {
         const seconds = practiceStarted / TICK_RATE;
         el("practice-tip").textContent =
           seconds < 12
-            ? `01 / MOVE · ${touchScreen.matches ? "Drag the joystick to steer" : `Use ${(["up", "left", "down", "right"] as const).map((direction) => keyLabel(controls.soloBinding[direction])).join(" / ")}`}. Your red player is 1. You’re safe in practice.`
+            ? `01 / MOVE · ${touchScreen.matches ? "Slide the joystick to steer. Power-ups are in Pause" : `Use ${(["up", "left", "down", "right"] as const).map((direction) => keyLabel(controls.soloBinding[direction])).join(" / ")}`}. Your red player is 1. You’re safe in practice.`
             : seconds < 25
               ? `02 / PLANT · Tap ${touchScreen.matches ? "BOMB" : keyLabel(controls.soloBinding.bomb)} to place a bomb. Move away and turn a corner before it explodes.`
               : seconds < 45

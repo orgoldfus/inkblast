@@ -12,10 +12,17 @@ describe("joystick steering", () => {
     expect(joystickDirection(x, y, null)).toBe(expected);
   });
 
+  it("registers short thumb movements and forgiving angled turns", () => {
+    expect(joystickDirection(6, 2, null)).toBe("right");
+    expect(joystickDirection(-2, -6, null)).toBe("up");
+    expect(joystickDirection(25, 30, "right")).toBe("down");
+    expect(joystickDirection(30, 25, "down")).toBe("right");
+  });
+
   it("returns to neutral near the center even after moving", () => {
     expect(joystickDirection(0, 0, null)).toBeNull();
-    expect(joystickDirection(5, -5, "right")).toBeNull();
-    expect(joystickDirection(-3, 4, "up")).toBeNull();
+    expect(joystickDirection(3, -3, "right")).toBeNull();
+    expect(joystickDirection(-2, 3, "up")).toBeNull();
   });
 
   it("absorbs diagonal jitter but responds to deliberate corners and reversals", () => {
