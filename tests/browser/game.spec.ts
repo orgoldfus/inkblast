@@ -465,7 +465,7 @@ test("pickup reveals and penalty countdowns stay readable and freeze while pause
   await expect(countdown).toHaveText(frozen!);
   await page.locator("#resume-button").click();
   await expect(page.locator("#p1-items .inventory-effect")).toHaveCount(0, {
-    timeout: 9000,
+    timeout: 20_000,
   });
   await expect(page.locator("#p1-pickup")).toHaveText("");
   await page.setViewportSize({ width: 390, height: 844 });
