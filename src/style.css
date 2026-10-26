@@ -853,8 +853,19 @@ input[type="range"] {
   margin: 14px 0;
   color: var(--red);
 }
-.result-score span:last-child {
+.result-score > div:last-child > span {
   color: var(--blue);
+}
+.finale-burst,
+.finale-confetti,
+.finale-crown,
+.finale-score-label,
+.finale-score-name {
+  display: none;
+}
+.result-actions {
+  display: flex;
+  flex-direction: column;
 }
 .result-score small {
   font-size: 23px;
@@ -867,6 +878,286 @@ input[type="range"] {
 }
 .result-dialog .text-button {
   margin-top: 25px;
+}
+.match-finale {
+  --finale-accent: #ffd16a;
+  isolation: isolate;
+  max-width: 780px;
+  width: calc(100% - 32px);
+  padding: 48px;
+  border: 3px solid var(--finale-accent);
+  background: #102533;
+  overflow: hidden auto;
+  column-gap: 40px;
+  row-gap: 28px;
+  align-items: center;
+  grid-template-columns: 170px minmax(0, 1fr);
+}
+.match-finale[open] {
+  display: grid;
+}
+.match-finale::backdrop {
+  background: #04131cf5;
+}
+.match-finale[data-outcome="defeat"] {
+  --finale-accent: #85c7ff;
+}
+.match-finale[data-outcome="draw"] {
+  --finale-accent: var(--paper);
+}
+.match-finale #result-kicker {
+  display: none;
+}
+.match-finale .result-emblem {
+  position: relative;
+  padding-top: 38px;
+}
+.match-finale .winner-mark {
+  width: 148px;
+  height: 148px;
+  margin: 0 auto;
+  font-size: 104px;
+  border-width: 7px;
+  box-shadow:
+    0 0 0 3px var(--paper),
+    10px 10px 0 var(--ink);
+}
+.match-finale .finale-crown {
+  display: block;
+  position: absolute;
+  width: 100px;
+  height: 60px;
+  top: 0;
+  left: calc(50% - 50px);
+  background: var(--finale-accent);
+  clip-path: polygon(
+    0 15%,
+    28% 40%,
+    50% 0,
+    72% 40%,
+    100% 15%,
+    85% 100%,
+    15% 100%
+  );
+  transform: rotate(-7deg);
+}
+.match-finale[data-outcome="defeat"] .finale-crown,
+.match-finale[data-outcome="draw"] .finale-crown {
+  display: none;
+}
+.match-finale .result-content {
+  position: relative;
+  text-align: left;
+}
+.match-finale h2 {
+  color: var(--finale-accent);
+  font-size: clamp(48px, 6vw, 80px);
+  line-height: 0.95;
+  text-wrap: balance;
+  text-shadow: 4px 5px 0 var(--ink);
+}
+.match-finale #result-copy {
+  color: var(--paper);
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 18px 0 22px;
+  max-width: 36ch;
+}
+.match-finale .finale-score-label {
+  display: block;
+  color: var(--paper);
+  font: 800 15px var(--display);
+  letter-spacing: 0.08em;
+}
+.match-finale .result-score {
+  justify-content: flex-start;
+  gap: 24px;
+  margin: 5px 0 0;
+  font-size: 64px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.match-finale .result-score > div {
+  min-width: 70px;
+  text-align: center;
+}
+.match-finale .finale-score-name {
+  display: block;
+  font: 800 13px var(--display);
+  color: var(--paper);
+  margin-top: 8px;
+}
+.match-finale .result-actions {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+.match-finale .result-actions button {
+  min-height: 52px;
+  margin: 0;
+}
+.match-finale #result-home {
+  border: 1px solid var(--paper);
+  padding: 12px 20px;
+  font: 800 24px var(--display);
+  text-transform: uppercase;
+}
+.match-finale #result-home:hover {
+  background: #2e4655;
+  color: var(--paper);
+  text-decoration: none;
+}
+.match-finale #result-setup {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: auto;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+}
+.match-finale[data-outcome="victory"] .finale-burst {
+  display: block;
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: repeating-conic-gradient(
+    from -15deg at 25% 50%,
+    #ffd16a0c 0deg 12deg,
+    transparent 12deg 30deg
+  );
+  pointer-events: none;
+}
+.match-finale[data-outcome="victory"] .finale-confetti {
+  display: block;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.finale-confetti i {
+  position: absolute;
+  left: calc(var(--piece) * 5.5% + 1%);
+  top: -24px;
+  width: 8px;
+  height: 18px;
+  background: var(--orange);
+  animation: finale-confetti 1.6s ease-out both;
+  animation-delay: calc(mod(var(--piece), 5) * 60ms);
+}
+.finale-confetti i:nth-child(3n) {
+  background: var(--blue);
+}
+.finale-confetti i:nth-child(3n + 1) {
+  background: var(--paper);
+}
+.match-finale[open] .result-emblem {
+  animation: finale-stamp 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes finale-stamp {
+  from {
+    transform: scale(1.6) rotate(-15deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes finale-confetti {
+  from {
+    transform: translateY(0) rotate(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  to {
+    transform: translateY(560px) rotate(280deg);
+    opacity: 0;
+  }
+}
+body.reduced-motion .match-finale .result-emblem,
+body.reduced-motion .finale-confetti i {
+  animation: none;
+}
+body.reduced-motion .finale-confetti {
+  display: none !important;
+}
+@media (max-width: 600px) {
+  .match-finale {
+    grid-template-columns: 1fr;
+    padding: 28px 24px;
+    row-gap: 22px;
+  }
+  .match-finale .result-content {
+    text-align: center;
+  }
+  .match-finale #result-copy {
+    margin-inline: auto;
+  }
+  .match-finale .result-score {
+    justify-content: center;
+  }
+  .match-finale .winner-mark {
+    width: 104px;
+    height: 104px;
+    font-size: 76px;
+  }
+  .match-finale .result-emblem {
+    padding-top: 28px;
+  }
+  .match-finale .finale-crown {
+    width: 72px;
+    height: 44px;
+    left: calc(50% - 36px);
+  }
+  .match-finale .result-actions {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+@media (max-height: 600px) and (min-width: 601px) {
+  .match-finale {
+    padding: 20px 28px;
+    row-gap: 14px;
+    column-gap: 28px;
+    grid-template-columns: 140px minmax(0, 1fr);
+  }
+  .match-finale .winner-mark {
+    width: 112px;
+    height: 112px;
+    font-size: 80px;
+  }
+  .match-finale h2 {
+    font-size: 52px;
+  }
+  .match-finale #result-copy {
+    margin: 10px 0 14px;
+    font-size: 13px;
+  }
+  .match-finale .result-score {
+    font-size: 48px;
+  }
+  .match-finale .result-actions {
+    gap: 8px;
+  }
+  .match-finale .result-actions button {
+    min-height: 46px;
+    padding: 8px 16px;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+  .match-finale #result-home {
+    padding: 8px 16px;
+    font-size: 22px;
+  }
+  .match-finale #result-setup {
+    min-height: 24px;
+  }
 }
 .bonus-note {
   color: var(--orange) !important;

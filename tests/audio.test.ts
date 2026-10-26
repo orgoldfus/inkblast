@@ -151,4 +151,50 @@ describe("generated game audio", () => {
     expect(context.createOscillator).toHaveBeenCalled();
     expect(context.createBufferSource).not.toHaveBeenCalled();
   });
+
+  it.each(["victory", "defeat", "draw"] as const)(
+    "plays a distinct %s finale and cancels it when leaving",
+    async (outcome) => {
+      await sound.unlock();
+      sound.matchResult(outcome);
+      const notes = context.createOscillator.mock.results.map(
+        ({ value }) => value as ReturnType<typeof audioNode>,
+      );
+      const pitches = notes.map(
+        (note) => note.frequency.setValueAtTime.mock.calls[0][0] as number,
+      );
+      expect(notes.length).toBeGreaterThan(2);
+      if (outcome === "draw") {
+        expect(pitches.at(-1)).toBe(pitches[0]);
+      } else {
+        expect(
+          pitches
+            .slice(1)
+            .every((pitch, index) =>
+              outcome === "victory"
+                ? pitch > pitches[index]
+                : pitch < pitches[index],
+            ),
+        ).toBe(true);
+      }
+      expect(notes[1].start.mock.calls[0][0]).toBeGreaterThan(
+        context.currentTime,
+      );
+      expect(notes.at(-1)!.stop.mock.calls[0][0]).toBeGreaterThan(2);
+      sound.stop();
+      expect(notes.every((note) => note.stop.mock.calls.length === 2)).toBe(
+        true,
+      );
+      expect(
+        notes.every((note) => note.disconnect.mock.calls.length === 1),
+      ).toBe(true);
+    },
+  );
+
+  it("keeps the match finale silent when effects are muted", async () => {
+    await sound.unlock();
+    sound.configure({ ...DEFAULT_SETTINGS, effects: 0 });
+    sound.matchResult("victory");
+    expect(context.createOscillator).not.toHaveBeenCalled();
+  });
 });

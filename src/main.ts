@@ -126,7 +126,7 @@ app.innerHTML = `
   </form></dialog>
   <dialog id="rotate-dialog" class="panel-dialog compact rotate-dialog" aria-labelledby="rotate-title" aria-describedby="rotate-help"><span class="rotate-device" aria-hidden="true"></span><h2 id="rotate-title">TURN UP THE CHAOS.</h2><p id="rotate-help">Rotate your device to landscape to play.<br>Your game is on hold.</p><button id="rotate-leave" class="text-button">Back to main menu</button></dialog>
   <dialog id="pause-dialog" class="panel-dialog compact"><p class="eyebrow">TAKE A BREATHER</p><h2>FUSE ON HOLD.</h2><p id="pause-reason">Your arena will be right here.</p><button id="resume-button" class="primary">BACK TO THE BLAST</button><button id="restart-button">RESTART MATCH</button><button id="export-replay" class="text-button">Save a replay record</button><button id="leave-button" class="text-button">Leave for main menu</button></dialog>
-  <dialog id="result-dialog" class="panel-dialog result-dialog"><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div id="winner-mark" class="winner-mark">1</div><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-score"><span id="result-p1">0</span><small>—</small><span id="result-p2">0</span></div><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-setup">CHANGE THE SETUP</button><button id="result-home" class="text-button">Main menu</button></dialog>
+  <dialog id="result-dialog" class="panel-dialog result-dialog" aria-labelledby="result-title" aria-describedby="result-copy"><div class="finale-burst" aria-hidden="true"></div><div class="finale-confetti" aria-hidden="true">${Array.from({ length: 18 }, (_, i) => `<i style="--piece:${i}"></i>`).join("")}</div><p id="result-kicker" class="eyebrow">THAT’S A WRAP</p><div class="result-emblem" aria-hidden="true"><div class="finale-crown"></div><div id="winner-mark" class="winner-mark">1</div></div><div class="result-content"><h2 id="result-title">PLAYER ONE WINS!</h2><p id="result-copy"></p><p id="result-bonus" class="bonus-note" hidden></p><div class="result-scoreboard"><span class="finale-score-label">FINAL SCORE</span><div class="result-score"><div><span id="result-p1">0</span><small id="result-name-p1" class="finale-score-name">PLAYER ONE</small></div><small>—</small><div><span id="result-p2">0</span><small id="result-name-p2" class="finale-score-name">PLAYER TWO</small></div></div></div></div><div class="result-actions"><button id="next-button" class="primary">NEXT ROUND ↗</button><button id="result-home" class="text-button">Main menu</button><button id="result-setup">CHANGE THE SETUP</button></div></dialog>
   <dialog id="help-dialog" class="panel-dialog"><div class="dialog-heading"><div><p class="eyebrow">A SHORT COURSE IN CHAOS</p><h2>THE FIELD GUIDE.</h2></div><button data-close class="close-button" aria-label="Close guide">×</button></div><div class="guide-steps"><article><b>01</b><h3>MAKE AN EXIT.</h3><p>Bombs explode in a cross. Solid blocks stop fire; orange bricks break. Turn a corner before your fuse runs out.</p></article><article><b>02</b><h3>TAKE A CHANCE.</h3><p>Broken bricks reveal pickups. Mystery pickups are on by default: one icon, 75% helpful, 25% trouble. Watch your player’s strip for the reveal and a 7-second penalty countdown. Switch them off in match setup for visible items.</p></article><article><b>03</b><h3>THINK ONE BOMB AHEAD.</h3><p>Fire lights other bombs instantly. Trap a rival with a chain reaction—but leave yourself a way out.</p></article></div><div class="item-guide">
   ${itemGuideMarkup()}</div><p class="field-note">Action priority depends on your loadout. Keep an eye on the inventory strip below your player. Hazards and closing walls vary with your setup.</p><button id="guide-practice" class="primary">TRY PRACTICE ↗</button></dialog>
   <dialog id="about-dialog" class="panel-dialog"><div class="dialog-heading"><h2>THE SMALL PRINT.</h2><button data-close class="close-button" aria-label="Close about">×</button></div><p>Inkblast is an original, device-local browser interpretation of classic bomb duels. All artwork and audio are created for this game, including original music and arcade effects generated with ElevenLabs.</p><p>Two participants, eleven scenery themes, curated duel layouts, and a local map workshop. Arcade Tour is an Inkblast mode.</p><p>Original-game fidelity is still under verification. Fixed 60 Hz timing, some item interactions, environmental placement, scoring details, and imported scheme behavior may differ from the 1997 game. This build does not claim exact emulation.</p><p>No account, network matches, trackers, or application server. Settings and maps stay in this browser; export maps from the workshop to keep a copy.</p><p id="local-record"></p><div class="dialog-footer"><button id="export-backup">EXPORT DEVICE BACKUP</button><button id="restore-backup">RESTORE BACKUP</button><input id="backup-file" type="file" accept=".json,application/json" hidden></div></dialog>
@@ -175,7 +175,8 @@ function needsRotation(): boolean {
 }
 function syncOrientation(): void {
   const rotate = el<HTMLDialogElement>("rotate-dialog");
-  const blocked = screen === "battle" && needsRotation();
+  const blocked =
+    screen === "battle" && state?.phase !== "finished" && needsRotation();
   if (blocked) {
     pause("Device rotated. Resume when you’re ready to play in landscape.");
     if (!rotate.open) rotate.showModal();
@@ -427,12 +428,10 @@ function finishRound(): void {
       : scores.some((score) => score >= settings.targetScore);
   if (mode === "practice") matchOver = true;
   renderScores();
-  const winningName =
-    winner === 0
-      ? "PLAYER ONE"
-      : settings.mode === "cpu"
-        ? "THE COMPUTER"
-        : "PLAYER TWO";
+  const playerNames = [
+    "PLAYER ONE",
+    settings.mode === "cpu" ? "THE COMPUTER" : "PLAYER TWO",
+  ];
   el("result-kicker").textContent =
     mode === "tour"
       ? matchOver
@@ -443,13 +442,36 @@ function finishRound(): void {
         : `ROUND ${round} COMPLETE`;
   const champion =
     scores[0] === scores[1] ? null : scores[0] > scores[1] ? 0 : 1;
-  el("result-title").textContent = matchOver
+  const finale = matchOver && mode !== "practice";
+  const outcome =
+    champion === null
+      ? "draw"
+      : settings.mode === "cpu" && champion === 1
+        ? "defeat"
+        : "victory";
+  const result = el("result-dialog");
+  result.classList.toggle("match-finale", finale);
+  result.dataset.outcome = finale ? outcome : "round";
+  result
+    .querySelector(".result-actions")!
+    .append(
+      ...(finale
+        ? [el("result-home"), el("result-setup")]
+        : [el("result-setup"), el("result-home")]),
+    );
+  el("result-title").textContent = finale
     ? champion === null
-      ? "HONOURS EVEN."
-      : `${champion === 0 ? "PLAYER ONE" : settings.mode === "cpu" ? "THE COMPUTER" : "PLAYER TWO"} TAKES IT!`
-    : winner === null
-      ? "IT’S A DRAW."
-      : `${winningName} WINS!`;
+      ? "MATCH DRAW!"
+      : settings.mode === "cpu"
+        ? champion === 0
+          ? "YOU WIN!"
+          : "YOU LOSE"
+        : `${playerNames[champion]} WINS!`
+    : mode === "practice"
+      ? "PRACTICE COMPLETE"
+      : winner === null
+        ? "IT’S A DRAW."
+        : `${playerNames[winner]} WINS!`;
   el("winner-mark").textContent =
     (matchOver ? champion : winner) === null
       ? "×"
@@ -458,18 +480,38 @@ function finishRound(): void {
     "blue",
     (matchOver ? champion : winner) === 1,
   );
-  el("result-copy").textContent =
-    winner === null
-      ? "A draw. Nobody gets the last laugh this time."
-      : winner === 0
-        ? "A well-placed bomb is good. A way out is better."
-        : state.players[0].kills < 0
-          ? "Your own blast caught you. Move away, then turn a corner before the fuse runs out."
-          : "Caught in the blast. Use solid blocks as cover and leave yourself an escape route.";
+  if (finale) {
+    const message =
+      champion === null
+        ? "All square after the final arena."
+        : settings.mode === "cpu"
+          ? champion === 0
+            ? "You took the duel. The arena is yours!"
+            : "The computer takes the duel. Your comeback starts here."
+          : `Player ${champion === 0 ? "one" : "two"} takes the duel. What a finish!`;
+    el("result-copy").textContent =
+      `${mode === "tour" ? "Tour" : "Match"} complete. ${message}`;
+  } else
+    el("result-copy").textContent =
+      winner === null
+        ? "A draw. Nobody gets the last laugh this time."
+        : winner === 0
+          ? "A well-placed bomb is good. A way out is better."
+          : state.players[0].kills < 0
+            ? "Your own blast caught you. Move away, then turn a corner before the fuse runs out."
+            : "Caught in the blast. Use solid blocks as cover and leave yourself an escape route.";
   el("result-p1").textContent = String(scores[0]);
   el("result-p2").textContent = String(scores[1]);
+  el("result-name-p1").textContent =
+    settings.mode === "cpu" ? "YOU" : "PLAYER ONE";
+  el("result-name-p2").textContent =
+    settings.mode === "cpu" ? "COMPUTER" : "PLAYER TWO";
   el("next-button").textContent = matchOver
-    ? "RUN IT BACK ↗"
+    ? mode === "practice"
+      ? "PRACTICE AGAIN ↗"
+      : mode === "tour"
+        ? "NEW TOUR ↗"
+        : "NEW MATCH ↗"
     : mode === "tour"
       ? "NEXT ARENA ↗"
       : "NEXT ROUND ↗";
@@ -493,6 +535,8 @@ function finishRound(): void {
     void saveProgress(progress).catch(() => {});
   }
   openDialog("result-dialog");
+  if (finale) sound.matchResult(outcome);
+  else sound.play([{ type: "result", player: winner ?? undefined }]);
   el("next-button").focus();
 }
 function updateHud(): void {
@@ -580,7 +624,8 @@ function frame(time: number): void {
       stepGame(state, [p1, p2]);
       updateTimes.push(performance.now() - updateStart);
       if (updateTimes.length > 1200) updateTimes.shift();
-      sound.play(state.events);
+      // The final score decides the match cue; the simulation only knows the round winner.
+      sound.play(state.events.filter((event) => event.type !== "result"));
       accumulator -= 1000 / TICK_RATE;
       if (mode === "practice") {
         practiceStarted++;

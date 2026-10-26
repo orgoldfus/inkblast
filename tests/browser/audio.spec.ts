@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 interface AudioQA {
   sources: { loop: boolean; duration: number; stopped: boolean }[];
   gains: GainNode[];
+  notes: { start: number; observed: number }[];
 }
 
 declare global {
@@ -22,13 +23,23 @@ test("generated local audio decodes, follows mute and pause, and plays through a
   });
   page.on("pageerror", (error) => errors.push(error.message));
   await page.addInitScript(() => {
-    const qa: AudioQA = { sources: [], gains: [] };
+    const qa: AudioQA = { sources: [], gains: [], notes: [] };
     Object.assign(window, { audioQA: qa });
     const createGain = AudioContext.prototype.createGain;
     AudioContext.prototype.createGain = function () {
       const gain = createGain.call(this);
       qa.gains.push(gain);
       return gain;
+    };
+    const createOscillator = AudioContext.prototype.createOscillator;
+    AudioContext.prototype.createOscillator = function () {
+      const node = createOscillator.call(this);
+      const start = node.start.bind(node);
+      node.start = (when = 0) => {
+        qa.notes.push({ start: when, observed: this.currentTime });
+        start(when);
+      };
+      return node;
     };
     const createSource = AudioContext.prototype.createBufferSource;
     AudioContext.prototype.createBufferSource = function () {
@@ -55,7 +66,7 @@ test("generated local audio decodes, follows mute and pause, and plays through a
   expect(requests).toEqual([]);
   await openSettings(page);
   await page.locator("select[name=mode]").selectOption("local");
-  await page.locator("select[name=targetScore]").selectOption("1");
+  await page.locator("select[name=targetScore]").selectOption("3");
   await page.getByRole("button", { name: "START MATCH" }).click();
   await expect
     .poll(
@@ -98,5 +109,24 @@ test("generated local audio decodes, follows mute and pause, and plays through a
       url.startsWith("http://127.0.0.1:4174/inkblast/audio/"),
     ),
   ).toBe(true);
+  for (let round = 2; round <= 3; round++) {
+    await page.locator("#next-button").click();
+    await expect(page.locator("#battle")).toHaveAttribute(
+      "data-phase",
+      "active",
+    );
+    await page.keyboard.press("Space");
+    await expect(page.locator("#result-dialog")).toBeVisible({
+      timeout: 12_000,
+    });
+  }
+  await expect(page.locator("#result-dialog")).toHaveClass(/match-finale/);
+  expect(
+    await page.evaluate(
+      () =>
+        window.audioQA.notes.filter((note) => note.start - note.observed > 0.1)
+          .length,
+    ),
+  ).toBe(3);
   expect(errors).toEqual([]);
 });

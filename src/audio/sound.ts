@@ -7,6 +7,7 @@ export class Sound {
   private effectsGain: GainNode | null = null;
   private voiceGain: GainNode | null = null;
   private voices = new Set<AudioScheduledSourceNode>();
+  private resultVoices = new Set<OscillatorNode>();
   private timer: number | null = null;
   private beat = 0;
   private theme = 0;
@@ -70,6 +71,34 @@ export class Sound {
     this.musicSource?.stop();
     this.musicSource?.disconnect();
     this.musicSource = null;
+    for (const voice of this.resultVoices) {
+      voice.stop();
+      voice.disconnect();
+      this.voices.delete(voice);
+    }
+    this.resultVoices.clear();
+  }
+  matchResult(outcome: "victory" | "defeat" | "draw"): void {
+    const gain = this.effectsGain;
+    if (!gain || !this.settings?.effects) return;
+    const notes =
+      outcome === "victory"
+        ? [523.25, 659.25, 783.99, 1046.5]
+        : outcome === "defeat"
+          ? [392, 349.23, 311.13, 261.63]
+          : [392, 523.25, 392];
+    notes.forEach((frequency, i) => {
+      const voice = this.tone(
+        frequency,
+        i === notes.length - 1 ? 0.7 : 0.2,
+        "triangle",
+        gain,
+        0.65,
+        frequency,
+        i * 0.18,
+      );
+      if (voice) this.resultVoices.add(voice);
+    });
   }
   private load(path: string): Promise<AudioBuffer | null> {
     const ctx = this.context;
@@ -148,33 +177,34 @@ export class Sound {
     gain: GainNode,
     volume: number,
     endFrequency = frequency,
-  ): void {
+    delay = 0,
+  ): OscillatorNode | null {
     const ctx = this.context;
-    if (!ctx || this.voices.size >= 20) return;
+    if (!ctx || this.voices.size >= 20) return null;
+    const start = ctx.currentTime + delay;
     const oscillator = ctx.createOscillator();
     const envelope = ctx.createGain();
     oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
+    oscillator.frequency.setValueAtTime(frequency, start);
     oscillator.frequency.exponentialRampToValueAtTime(
       Math.max(20, endFrequency),
-      ctx.currentTime + duration,
+      start + duration,
     );
-    envelope.gain.setValueAtTime(0, ctx.currentTime);
-    envelope.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.008);
-    envelope.gain.exponentialRampToValueAtTime(
-      0.001,
-      ctx.currentTime + duration,
-    );
+    envelope.gain.setValueAtTime(0, start);
+    envelope.gain.linearRampToValueAtTime(volume, start + 0.008);
+    envelope.gain.exponentialRampToValueAtTime(0.001, start + duration);
     oscillator.connect(envelope);
     envelope.connect(gain);
-    oscillator.start();
-    oscillator.stop(ctx.currentTime + duration + 0.02);
+    oscillator.start(start);
+    oscillator.stop(start + duration + 0.02);
     this.voices.add(oscillator);
     oscillator.onended = () => {
       this.voices.delete(oscillator);
+      this.resultVoices.delete(oscillator);
       oscillator.disconnect();
       envelope.disconnect();
     };
+    return oscillator;
   }
   private noise(duration: number): void {
     const ctx = this.context;
